@@ -1,0 +1,2163 @@
+% This file compiles with both LuaLaTeX and XeLaTeX
+\documentclass[11pt]{article}
+
+% Change "review" to "final" to generate the final (sometimes called camera-ready) version.
+% Change to "preprint" to generate a non-anonymous version with page numbers.
+\usepackage[review]{acl}
+
+% This is not strictly necessary, and may be commented out,
+% but it will improve the layout of the manuscript,
+% and will typically save some space.
+ \usepackage{microtype}
+
+% If the title and author information does not fit in the area allocated, uncomment the following
+%
+%\setlength\titlebox{<dim>}
+%
+% and set <dim> to something 5cm or larger.
+
+% These font selection commands work with
+% LuaLaTeX and XeLaTeX, but not pdfLaTeX.
+\usepackage[OT2, T1]{fontenc}
+\usepackage[english,bidi=default,russian]{babel} % English as the main language.
+\babelfont{rm}{TeXGyreTermesX} % similar to Times
+%%% include whatever languages you need below this line
+\babelprovide[import]{hindi}
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning}
+
+\babelfont[*devanagari]{rm}{Lohit Devanagari}
+\babelprovide[import]{arabic}
+\babelfont[*arabic]{rm}{Noto Sans Arabic}
+
+% ── Tables ──
+\usepackage{booktabs}
+\usepackage{threeparttable}   % for table footnotes (dagger)
+\usepackage{multirow}
+\usepackage{makecell}
+\newfontfamily\arabicfont[Script=Arabic]{Noto Nastaliq Urdu}
+% ── Figures ──
+\usepackage{graphicx}
+\usepackage{subcaption}
+
+% ── URLs in footnotes ──
+\usepackage{hyperref}
+\usepackage{url}
+
+% ── Math (for TRR equation) ──
+\usepackage{amsmath}
+
+%\usepackage{polyglossia}
+%\setdefaultlanguage{english}
+%\setotherlanguages{arabic,russian,thai,hindi,kannada}
+
+%%%%%
+
+
+\title{\small Evaluating LLM-Generated Urdu Stories: Linguistic Quality and Cultural Relevance in the Pakistani Context \\
+The Low-Resource Language Gap in Multilingual LLMs: Evidence from Urdu Story Generation \\
+Multilingual in Name Only? Cultural and Linguistic Weaknesses of LLMs in Urdu \\The Illusion of Multilinguality: Evaluating LLM Generation in Urdu \\ Multilingual LLMs in Low-Resource Languages: A Case Study of Urdu Story Generation}
+% Author information can be set in various styles:
+% For several authors from the same institution:
+% \author{Author 1 \and ... \and Author n \\
+%         Address line \\ ... \\ Address line}
+% if the names do not fit well on one line use
+%         Author 1 \\ {\bf Author 2} \\ ... \\ {\bf Author n} \\
+% For authors from different institutions:
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \And  ... \And
+%         Author n \\ Address line \\ ... \\ Address line}
+% To start a seperate ``row'' of authors use \AND, as in
+% \author{Author 1 \\ Address line \\  ... \\ Address line
+%         \AND
+%         Author 2 \\ Address line \\ ... \\ Address line \And
+%         Author 3 \\ Address line \\ ... \\ Address line}
+
+\author{First Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\\And
+  Second Author \\
+  Affiliation / Address line 1 \\
+  Affiliation / Address line 2 \\
+  Affiliation / Address line 3 \\
+  \texttt{email@domain} \\}
+
+\begin{document}
+
+\maketitle
+\begin{abstract}
+Multilingual large language models (LLMs) are
+increasingly used for open-ended text generation, yet
+their behaviour in low-resource languages such as
+Urdu remains poorly understood. To
+study this, we curate \textbf{Urdu-Stories}, a dataset
+of  93 stories generated with three contemporary LLMs
+(GPT-5.1, Qwen-3-Max, DeepSeek-3.1). All stories are
+manually annotated by five native Urdu speakers under a
+nine-label taxonomy covering linguistic, semantic, and
+cultural / script dimensions.Our analysis surfaces five
+consistent findings: (1) \textit{memorisation over
+creativity}: for well-known literary titles, models
+often reproduce the original story rather than
+generating a new plot; (2) \textit{unnatural title
+anchoring}: we introduce the Title Repetition
+Rate (TRR) to capture a behaviour where models
+repeatedly insert the given title into the body of the
+story to signal what it is ``about'', exceeding
+original-author TRR; (3) \textit{linguistic fragility}:
+; (4) \textit{semantic and register
+instability}: factual contradictions,
+grammatical-but-meaningless sentences, and unprompted
+Punjabi switching; and (5) \textit{cultural
+shallowness}: pervasive cross-script contamination
+ and a 3.7:1
+male-default protagonist bias . Together, these results show that current
+multilingual LLMs remain fluent but neither creative
+nor culturally grounded in Urdu. We release the
+dataset, annotations, and evaluation scripts to
+support further research on open-ended generation in
+low-resource languages.
+\end{abstract}
+
+
+\section{Introduction}
+
+Large Language Models (LLMs) have demonstrated remarkable performance across a wide range of text generation tasks, yet this success remains concentrated predominantly in English and a few other handful of languages. While many of these models are described as multilingual and are capable of generating text in numerous languages, their performance in most of these languages is insufficiently evaluated. This gap is especially pronounced for low-resource languages, which collectively represent a substantial portion of the world’s linguistic diversity.
+
+Evaluating language competence demands more than measuring syntax, semantics and morphology or fluency of the generated text. Language is inseparable from the cultural values, social norms and shared historical experiences. Consequently, a reliable language model must internalize these nuances to serve reliably as a tool for information retrieval and content generation. Without such grounding, generated content may appear superficially fluent while remaining semantically unstable, culturally shallow, or socially misaligned.
+
+In this work, we question how well contemporary multilingual LLMs are grounded in the linguistic and cultural dimensions of low-resource languages. We take Urdu as our case study and investigate the capacity of LLMs to produce stories that are linguistically correct, semantically meaningful, and culturally situated within the Pakistani context. Story generation is a deliberate design choice, unlike factual or short-form tasks, narrative generation demands contextual awareness, structural coherence, and cultural sensitivity sustained over longer text, making it a particularly revealing testbed for model capability.
+
+Concretely, we examine whether LLM-generated Urdu stories preserve contextual relevance, avoid formulaic narrative patterns, and handle culturally sensitive themes appropriately, whether those themes originate from Urdu literary traditions or are adapted from Western sources. This leads us to the following research questions:
+
+
+\begin{itemize}
+\item Do LLMs generate original Urdu narratives, or do they reproduce existing storytelling patterns?
+\item How linguistically accurate are LLM-generated Urdu stories in terms of grammar, spelling, and sentence structure?
+\item Are the generated stories semantically coherent and contextually meaningful?
+\item To what extent do LLM-generated stories preserve Pakistani cultural and social contexts?
+\item Do LLM-generated Urdu stories exhibit gender bias in character representation and narrative focus?
+\end{itemize}
+
+
+To study these questions, we introduce \textbf{Urdu-Stories}, a dataset of 93 stories generated using three contemporary LLMs: GPT-5.1, Qwen-3-Max, and DeepSeek-3.1. All stories are manually annotated by five native Urdu speakers using a nine-label taxonomy covering linguistic, semantic, cultural, and script-related dimensions. Our analysis reveals five consistent findings. First, models exhibit \textit{memorisation over creativity}: when prompted with well-known literary titles, they frequently reproduce the original story rather than generating a novel narrative. Second, we observe \textit{unnatural title anchoring}: models repeatedly insert the provided title into the story body to signal topical relevance. To quantify this behaviour, we introduce the \textit{Title Repetition Rate (TRR)}, which substantially exceeds the repetition patterns found in human-written stories. Third, we identify \textit{linguistic fragility}, including spelling inconsistencies and grammatical instability. Fourth, models demonstrate \textit{semantic and register instability}, producing factual contradictions, grammatically valid but meaningless sentences, and unprompted switching into Punjabi. Finally, we observe \textit{cultural shallowness}, reflected in pervasive cross-script contamination and a 3.7:1 male-default protagonist bias.
+
+Together, these findings demonstrate that current multilingual LLMs remain fluent in Urdu at the surface level, yet fail to achieve deeper creativity, semantic robustness, and cultural grounding.\footnote{We release the dataset, annotations, and evaluation scripts to support future research on open-ended generation in low-resource languages.}
+Broadly, our findings carry implications beyond Urdu. We believe that our findings will be consistent with many low-resource languages if not all. They highlight a need of substantial and dedicated efforts in development models for low-resource languages.
+
+
+% Although Large Language Models (LLMs) have demonstrated strong performance in text generation tasks, it remains unclear whether they generate genuinely novel narratives or merely reproduce memorized storytelling patterns. This challenge becomes even more significant in low-resource languages such as Urdu, where literary style, semantic coherence, and cultural nuances play a critical role in narrative quality.
+
+% This study investigates the capability of modern LLMs to generate Urdu stories that are not only linguistically correct but also semantically meaningful and culturally grounded within the Pakistani context. In particular, we analyze whether generated stories preserve contextual relevance, avoid repetitive narrative structures, and appropriately adapt culturally sensitive themes originating from both Urdu and Western literary traditions.
+% \section{Research Questions}
+
+% This study aims to answer the following research questions:
+
+% \begin{itemize}
+%     \item Do LLMs generate original Urdu narratives or tend to reproduce existing storytelling patterns?
+    
+%     \item How linguistically accurate are LLM-generated Urdu stories in terms of grammar, spelling, and sentence structure?
+    
+%     \item Are the generated stories semantically coherent and contextually meaningful?
+    
+%     \item To what extent do LLM-generated stories preserve Pakistani cultural and social contexts?
+    
+%     \item Do LLM-generated Urdu stories exhibit gender bias in character representation and narrative focus?
+% \end{itemize}
+\section{Methodology}
+
+\begin{figure*}[t]
+\centering
+\begin{tikzpicture}[
+  node distance=4mm and 4mm,
+  every node/.style={font=\scriptsize, align=center},
+  box/.style={draw, rounded corners, minimum height=6mm,
+              minimum width=18mm, fill=gray!10},
+  arr/.style={-Latex}
+]
+\node[box] (t) { Story Title Selection };
+\node[box, right=of t] (m) {3 LLMs\\GPT, QWEN, DS};
+\node[box, right=of m] (s) {93 Stories\\151k words};
+\node[box, right= of s] (n) {Segment};
+\node[box, right= of n] (h) {Manual\\Annotation\\};
+\node[box, below right=7mm and -18mm of n] (a) {Automatic\\(em-dash,\\script)};
+
+\draw[arr] (t)--(m); \draw[arr] (m)--(s); \draw[arr] (s)--(n);
+\draw[arr] (n)--(h); \draw[arr] (n)--(a);
+
+\end{tikzpicture}
+\caption{Evaluation pipeline}
+\label{fig:pipeline}
+\end{figure*}
+\subsection{Story Title Corpus}
+\label{subsec:title_corpus}
+
+We constructed a corpus of \textbf{31 story titles} drawn
+from four different sources
+(Table~\ref{tab:title_distribution}): \emph{Translated Short
+Story Titles} (TSST, N~=~11) from canonical English short
+fiction (e.g.\ Jackson, Chekhov, Hemingway, Maupassant);
+\emph{Urdu Short Story Titles} (UST, N~=~11) from canonical
+twentieth-century Urdu writers used \emph{verbatim}
+(e.g.\ Manto, Chughtai, Ghulam Abbas, Bedi, Hyder);
+\emph{Fables} (N~=~3), short Indo-Pakistani moral tales used
+as a memorisation control; and \emph{Neutral Urdu Titles}
+(NUT, N~=~6), author-original Urdu titles composed by the
+research team as an unseen-prompt control. The complete
+title list with authors, sources, and ALA-LC transliterations
+is given in Appendix~\ref{app:titles}
+(Table~\ref{tab:title_full_list}).
+
+For TSST, we obtained an initial Urdu rendering of each
+English title via the GPT-5.1 translation API and then
+manually verified every translation with a native Urdu
+speaker; published Urdu renderings (e.g.\
+\foreignlanguage{arabic}{لاٹری}, \foreignlanguage{arabic}{بندر کا پنجہ})
+were retained verbatim where they exist.
+
+\begin{table}[h]
+\centering\small
+\begin{tabular}{lcc}
+\toprule
+\textbf{Source} & \textbf{Abbrev.} & \textbf{\#} \\
+\midrule
+Translated Short Story Titles & TSST  & 11 \\
+Urdu Short Story Titles       & UST   & 11 \\
+Fables                        & Fable & 3  \\
+Neutral Urdu Titles           & NUT   & 6  \\
+\midrule
+\textbf{Total}                &       & \textbf{31} \\
+\bottomrule
+\end{tabular}
+\caption{Distribution of story titles across the four
+source categories.}
+\label{tab:title_distribution}
+\end{table}
+
+The four-way split is intentional: TSST tests cross-cultural
+transfer, UST tests reproduction vs.\ reinterpretation of
+canonical Urdu literature, Fable controls for plot
+memorisation, and NUT controls for memorisation in absence
+of any prior text. Corpus size (N~=~31, yielding 93 generations
+across three models) balances stylistic breadth with the
+depth required for sentence-level human annotation.
+
+\subsection{Generation Protocol}
+\label{subsec:generation}
+
+Three LLMs were evaluated: \textbf{GPT}
+(\texttt{5.1}), \textbf{QWEN} (\texttt{3-Max}),
+and \textbf{DeepSeek} (\texttt{3.1}), all accessed
+in \texttt{<11-2025>}. Each title was issued to every model
+exactly once using a fixed zero-shot prompt:
+
+\begin{quote}\itshape
+``Write a 2000-word Urdu story in a Pakistani cultural
+context. The title is \foreignlanguage{arabic}{دوسری عورت}.''
+\end{quote}
+
+Few-shot exemplars and chain-of-thought scaffolding were
+deliberately omitted so that observed differences reflect
+model capacity rather than prompt engineering.
+\subsection{Corpus Statistics}
+\label{subsec:corpus_stats}
+
+The protocol produced \textbf{93 stories} (31 titles
+$\times$ 3 models) totalling \textbf{151{,}965 words}
+and \textbf{9{,}460 sentences}
+(Table~\ref{tab:corpus_stats}). Length compliance with
+the 2{,}000-word target ($\pm$20\%) varied sharply across
+models: DeepSeek met it in 80.6\% of stories, GPT in
+58.1\%, and QWEN in only 12.9\% --- with no QWEN story
+exceeding 1{,}900 words, indicating an internal length
+ceiling rather than random variance. We therefore treat
+length compliance as a finding rather than a filter, and
+report normalised error rates per 1{,}000 words
+(Section~\ref{subsec:linguistic}) to enable fair
+cross-model comparison.
+
+\begin{table}[ht]
+\label{tab:corpus_stats}
+\centering\small
+\caption{Per-model corpus statistics on the normalised
+text. Compliance = \% of stories within $\pm$20\% of the
+2{,}000-word target.}
+\scalebox{0.9}{
+
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Statistic} & \textbf{GPT} & \textbf{QW} & \textbf{DS} & \textbf{Overall} \\
+\midrule
+Stories                  & 31      & 31      & 31      & 93      \\
+Avg words / story       & 1{,}587 & 1{,}382 & 1{,}934 & 1{,}634 \\
+Min         & 726 & 946  & 1{,}461  & 1{,}044  \\
+Max words & 1{,}997 &1{,}856&  3{,}030 &  2{,}294\\
+Std.\ dev.\ (words)      & 290     & 199     & 317     & 351     \\
+
+Total words              & 49{,}199 & 42{,}827 & 59{,}939 & 151{,}965 \\
+Avg. sentences / story   & 122.9    & 101.6    & 149.6   & 101.7   \\
+Total sentences          & 3{,}809 & 3{,}149 & 4{,}639 & 11{,}597 \\
+Length compliance (\%)   & 58.1    & 12.9    & 80.6    & 50.5    \\
+\bottomrule
+\end{tabular}}
+\end{table}
+\subsection{Annotation and Inter-Annotator Agreement}
+\label{subsec:annotation}
+
+Five native Urdu speakers annotated all 93 stories in
+Label Studio using nine labels in four categories
+(Table~\ref{tab:labels_compact}). Most labels are applied
+at the \emph{paragraph} level; entity labels (\textbf{PER},
+\textbf{City}, \textbf{MaleProtagonist},
+\textbf{FemaleProtagonist}) are applied once per
+\emph{story}. \emph{Obliqueness} (gender / number /
+oblique-case agreement, e.g.\ \foreignlanguage{arabic}{سا/سی},
+\foreignlanguage{arabic}{اتنا/اتنی}) is treated as a sub-type of
+\emph{Grammar Error}; \emph{Semantic Anomaly} marks sentences that
+are syntactically well-formed but semantically empty;
+\emph{Context Mismatch} marks factual contradictions; and
+\emph{Foreign Word} marks any token (whole or partial)
+containing non-Urdu script characters or non-Urdu words.
+
+A stratified subset of \textbf{60 stories} (20 per model,
+balanced across title categories) was independently
+re-annotated by a second annotator. Cohen's $\kappa$ was
+computed using exact text+label match for PER/City,
+substring-tolerant match for protagonist labels (to
+accommodate annotators selecting the name token vs.\ the
+introducing phrase), and same-label-in-same-paragraph
+match for all other labels. Overall agreement was
+$\kappa$~=~\textbf{xxx} (\textbf{xxx} reliability); per-model
+and per-label scores are reported in
+Appendix~\ref{app:iaa}.
+
+\begin{table*}[!htbp]
+\centering\scriptsize
+
+\caption{Annotation labels. G = granularity
+(\textbf{S}~story / \textbf{P}~paragraph).}
+\label{tab:labels_compact}
+\begin{tabular}{p{2.7cm} c p{9.6cm}}
+\toprule
+\textbf{Label} & \textbf{G} & \textbf{Definition / Example} \\
+\midrule
+\multicolumn{3}{l}{\textit{\textbf{Linguistic}}} \\
+Grammar Error   & P & Syntax \foreignlanguage{arabic}{  احمد اور ثنا نے سب کے لیے تحفے لائے }\\
+Agreement Error & P &Obliqueness .
+   \foreignlanguage{arabic}{چھوٹی سی لنگر خانہ} $\rightarrow$
+   \foreignlanguage{arabic}{چھوٹا سا لنگر خانہ}  \\
+Spelling Error  & P & Misspelled Urdu word.
+   \foreignlanguage{arabic}{مسئیبت} $\rightarrow$
+   \foreignlanguage{arabic}{مصیبت} \\
+Space Deletion  & P & Two words fused, no space.
+   \foreignlanguage{arabic}{چاہتیہوں} $\rightarrow$
+   \foreignlanguage{arabic}{چاہتی ہوں} \\
+Em-dash & P & \\
+\midrule
+\multicolumn{3}{l}{\textit{\textbf{Semantic}}} \\
+Context Mismatch & P & Factual contradiction within story.
+   ``had no children \ldots her son went to school'' \\
+Semantic Anomaly          & P & Grammatical but meaningless.
+   \foreignlanguage{arabic}{آواز میں عجیب کانپ تھی} \\
+
+Cultural Incons.\ & P & Non-Pakistani reference.
+   \foreignlanguage{arabic}{چند اسٹیشن کے بعد، ٹرین کا ریفریشمنٹ وین کھلا} \\
+Script Contamination     & P & Non-Urdu script token (whole/partial).
+   \textit{hospital}; \foreignlanguage{arabic}{ح}aj\foreignlanguage{arabic}{ی} \\
+\midrule
+\multicolumn{3}{l}{\textit{\textbf{Entities}}} \\
+PER              & S & Person name. \foreignlanguage{arabic}{حمزہ} \\
+City             & S & Place name. \foreignlanguage{arabic}{لاہور} \\
+MaleProtag.      & S & Main male character.
+   \foreignlanguage{arabic}{حمزہ} \\
+FemaleProtag.    & S & Main female character.
+   \foreignlanguage{arabic}{ثنا} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
+\section{Qualitative Analysis}
+Several models generated grammatically correct Urdu but failed to preserve culturally authentic Pakistani dialogues and naming conventions.
+
+
+\subsection{Linguistic and Semantic Quality Analysis}
+
+Manual annotation of all 93 generated stories 
+(31 titles $\times$ 3 models) identified 
+\textbf{762 quality issues} across three dimensions: 
+linguistic errors (N~=~477, 62.6\%), semantic 
+coherence failures (N~=~277, 36.4\%), and cultural 
+mismatches (N~=~8, 1.0\%). Two automatically 
+detected error types --- typographic dash misuse 
+and foreign word intrusion --- are reported 
+separately in Section~\ref{subsec:auto_errors}. 
+Table~\ref{tab:error_summary} (Appendix) presents 
+the complete breakdown.
+
+%─────────────────────────────────────────
+\subsubsection{Linguistic Errors}
+%─────────────────────────────────────────
+
+Linguistic errors constituted the largest share 
+of identified issues (N~=~1359). Four subtypes 
+were annotated: grammatical mistakes, spelling 
+errors, space deletion, and em-dash.
+
+\textbf{Grammatical errors} were the most 
+frequent category overall (N~=~316, avg~=~3.39 
+per story). QWEN exhibited the highest rate 
+(N~=~138), followed by 
+DeepSeek (N~=~106) and GPT (N~=~72) . Recurring patterns included 
+incorrect postposition usage (\foreignlanguage{arabic}{نے}، \foreignlanguage{arabic}{کو}،  
+\foreignlanguage{arabic}{سے}), broken verb-subject agreement, and 
+malformed compound sentences --- errors that 
+significantly impair readability in Urdu prose.
+To characterise the kinds of grammatical failures
+observed, we discuss three representative examples,
+each highlighting a different fault line in Urdu
+syntax.
+
+
+\textit{(i) Ergative case marker omission.}
+In QWEN's
+\foreignlanguage{arabic}{زرین خاموشی سے بندوق نیچے رکھ دی}
+(\textit{Zarīn khāmōshī sē bandūq nīchē rakh dī},
+``Zarin quietly put the gun down''), the agent
+\foreignlanguage{arabic}{زرین} requires the ergative
+postposition \foreignlanguage{arabic}{نے}
+(\textit{nē}) because the verb
+\foreignlanguage{arabic}{رکھ دی} (\textit{rakh dī}) is
+transitive and perfective: the correct form is
+\foreignlanguage{arabic}{زرین نے خاموشی سے بندوق نیچے رکھ دی}
+(\textit{Zarīn nē khāmōshī sē bandūq nīchē rakh dī}).
+The same omission recurs in GPT's
+\foreignlanguage{arabic}{وہ آسمان کی طرف دیکھ کر گھوڑے کو موڑا}
+(\textit{Wuh āsmān kī ṭaraf dēkh kar ghōṛē kō mōṛā},
+missing \foreignlanguage{arabic}{اس نے} \textit{us nē}).
+Ergative \foreignlanguage{arabic}{نے} marking is a
+hallmark of Urdu morphosyntax with no English analogue,
+and its absence suggests cross-lingual transfer from a
+nominative-only template.
+
+\textit{(ii) Gender agreement violation.}
+In GPT's
+\foreignlanguage{arabic}{اس کے منہ سے آج کوئی غرور بھرا بھونک نہیں نکل رہا تھا}
+(\textit{Us kē munh sē āj kōʾī ghurūr bharā bhaunk
+nahīṅ nikal rahā thā}, ``no proud bark came out of his
+mouth today''), the noun
+\foreignlanguage{arabic}{بھونک} (\textit{bhaunk},
+\emph{bark}) is feminine in Urdu and triggers feminine
+agreement on both the modifier and the verb: the
+corrected form is
+\foreignlanguage{arabic}{غرور بھری بھونک  نہیں نکل رہی تھی}
+(\textit{ghurūr bharī bhaunk \ldots nahīṅ nikal rahī
+thī}). The model nevertheless propagates masculine
+agreement through the entire clause, indicating that
+grammatical gender is being assigned by surface
+frequency rather than by lexical entry.
+
+\textit{(iii) Aspect mismatch in sequential narrative.}
+QWEN's
+\foreignlanguage{arabic}{اگلے دن، وہ سویرے اٹھا، نہاتا دھوتا، اوور کوٹ پہنا اور دفتر پہنچ گیا}
+(\textit{Aglē din, wuh sawērē uṭhā, nahātā dhōtā, ōvar
+kōṭ pahnā aur daftar pahuṅch gayā}, ``the next day, he
+got up early, bathed, put on the overcoat, and reached
+the office'') chains four events in a single sentence
+using past-perfective forms
+(\foreignlanguage{arabic}{اٹھا} \textit{uṭhā},
+\foreignlanguage{arabic}{پہنا} \textit{pahnā},
+\foreignlanguage{arabic}{پہنچ گیا} \textit{pahuṅch
+gayā}), but inserts
+\foreignlanguage{arabic}{نہاتا دھوتا} (\textit{nahātā
+dhōtā}, habitual imperfective). The corrected form is
+\foreignlanguage{arabic}{نہایا دھویا} (\textit{nahāyā
+dhōyā}). This aspectual slip is particularly
+diagnostic because it occurs within an otherwise
+well-formed sequence, suggesting that the model can
+produce isolated verb forms but struggles to maintain
+aspectual consistency across a narrative clause.
+
+These examples show that grammatical errors in
+LLM-generated Urdu rarely look like typos or careless
+slips. Instead, they cluster around the parts of Urdu
+grammar that have no direct English equivalent: marking
+who did what (case), making words match in gender, and
+keeping the timing of events consistent across a
+sentence. A fluent Urdu reader notices such errors
+immediately, because they affect how the sentence
+\emph{feels}, not just how it reads. Their recurrence
+across all three models suggests that these are not
+random mistakes but reflect a deeper gap in how Urdu
+morphosyntax is represented during generation.
+
+
+\textbf{Agreement Error} A substantial share of grammatical issues
+( \textit{cf.}\
+Table~\ref{tab:error_summary}) involved local
+agreement failures within a 2--3 word window. We
+distinguish two sub-types. \textit{Gender agreement
+errors} arise when an adjective, verb, or possessive
+fails to match the gender of its head noun in a
+nominative context (e.g.\
+\foreignlanguage{arabic}{عجیب سا ہلچل} for feminine
+\foreignlanguage{arabic}{ہلچل}); these are the most
+common in our data. \textit{Oblique-case agreement
+errors} (\emph{obliqueness}, in the strict
+linguistic sense) arise when a masculine singular
+noun or adjective fails to take its oblique form
+before a postposition such as
+\foreignlanguage{arabic}{نے},
+\foreignlanguage{arabic}{کو},
+\foreignlanguage{arabic}{سے}, or
+\foreignlanguage{arabic}{کی}
+(e.g.\ \foreignlanguage{arabic}{سر کٹا سوار نے}
+$\rightarrow$ \foreignlanguage{arabic}{سر کٹے سوار نے}).
+Both sub-types share a common signature: they are
+mechanical, strictly local, and detectable within a
+short window, suggesting that a lightweight
+post-editing step over noun-phrase windows could
+plausibly correct a large share of them without
+modifying the underlying LLM.
+
+\textbf{Spelling errors} (N~=~108, avg~=~1.16 
+per story) were distributed across all models 
+(DeepSeek: 52, GPT: 16, QWEN: 40). Their 
+relatively uniform distribution suggests that 
+spelling degradation is model-agnostic and 
+may reflect tokenization artifacts in Urdu 
+Nastaliq script processing rather than 
+model-specific weaknesses. 
+Four recurring
+patterns characterise these errors.
+
+\textit{(i) Hamza omission in derived adjectives.}
+QWEN produced \foreignlanguage{arabic}{دریاوی}
+(\textit{daryāwī}) and \foreignlanguage{arabic}{جادوی}
+(\textit{jādwī}) where the correct forms are
+\foreignlanguage{arabic}{دریائی} (\textit{daryāʾī},
+``riverine'') and \foreignlanguage{arabic}{جادوئی}
+(\textit{jāduʾī}, ``magical''). Both errors drop the
+hamza-on-yē that Urdu uses to mark the adjectival
+suffix on vowel-final stems. The fact that two
+unrelated stems show the same omission suggests a
+systematic gap in modelling Urdu's hamza-bearing
+morphology rather than incidental misspellings. A
+related but inverted failure appears in DeepSeek's
+\foreignlanguage{arabic}{مسئبت} (\textit{musʾibat})
+for \foreignlanguage{arabic}{مصیبت}
+(\textit{muṣībat}, ``calamity''), where a hamza is
+\emph{inserted} into an Arabic loanword that does not
+take one. Together these cases show that hamza
+placement, governed by complex morphological and
+etymological rules in Urdu, is unstable in current
+LLMs in both directions.
+
+\textit{(ii) Vowel and diacritic confusion.}
+DeepSeek produced \foreignlanguage{arabic}{میچس}
+(\textit{mīchas}) instead of
+\foreignlanguage{arabic}{ماچس} (\textit{māchis},
+``matchbox''), substituting the short-\textit{i} vowel
+sign for the long-\textit{ā} alef. Similarly,
+\foreignlanguage{arabic}{مینہہ} (\textit{mīnh}) was
+produced for \foreignlanguage{arabic}{مینہ}
+(\textit{mēnh}, ``rain'') with a duplicated final
+\foreignlanguage{arabic}{ہ}, and QWEN produced
+\foreignlanguage{arabic}{ہیریو} (\textit{hīriyō}) for
+\foreignlanguage{arabic}{ہیرو} (\textit{hīrō},
+``hero'') by inserting a spurious
+\foreignlanguage{arabic}{ی}. Such errors closely
+resemble the orthographic mistakes of a learner who
+has heard the word but not internalised its standard
+written form.
+
+\textit{(iii) Visually-similar character substitution.}
+GPT produced \foreignlanguage{arabic}{جھلے ہوئے ہاتھ}
+(\textit{jhalē hūʾē hāth}) where the intended phrase
+is \foreignlanguage{arabic}{جلے ہوئے ہاتھ}
+(\textit{jalē hūʾē hāth}, ``burnt hands''),
+substituting \foreignlanguage{arabic}{جھ} (\textit{jh},
+aspirated) for \foreignlanguage{arabic}{ج}
+(\textit{j}). The two graphemes differ only by a
+diacritic dot cluster, and the substitution changes
+both pronunciation and meaning. We attribute these
+errors to byte-pair tokenisation of Nastaliq script,
+where visually adjacent characters can share token
+neighbourhoods despite phonetic distance.
+
+\textit{(iv) English-mediated retroflex confusion.}
+Two errors point to a deeper cross-lingual effect.
+DeepSeek produced \foreignlanguage{arabic}{ربر}
+(\textit{rabar}) for \foreignlanguage{arabic}{ربڑ}
+(\textit{rabaṛ}, ``rubber''), \emph{dropping} the
+retroflex flap \foreignlanguage{arabic}{ڑ}
+(\textit{ṛ}) in favour of the plain trill
+\foreignlanguage{arabic}{ر} (\textit{r}). Conversely,
+the Punjabi-Urdu given name
+\foreignlanguage{arabic}{اللہ دتّہ}
+(\textit{Allāh Dittā}) was rendered as
+\foreignlanguage{arabic}{اللہ ڈتہ} (\textit{Allāh
+Ḍittah}), \emph{inserting} a retroflex
+\foreignlanguage{arabic}{ڈ} (\textit{ḍ}) where the
+dental \foreignlanguage{arabic}{د} (\textit{d}) is
+correct. These errors are diagnostic precisely because
+they move in opposite directions: in the first, the
+model erases an Urdu phonemic distinction that English
+lacks (English ``rubber'' has no retroflex); in the
+second, the model overgeneralises the English
+transliteration convention by which South Asian dental
+\textit{t} and \textit{d} are conventionally written
+with retroflex symbols in romanisation. The retroflex
+series (\foreignlanguage{arabic}{ٹ},
+\foreignlanguage{arabic}{ڈ},
+\foreignlanguage{arabic}{ڑ}) is one of the few
+phonemic features of Urdu absent from both Arabic and
+Persian, and our observations suggest the model
+resolves it via an English-mediated phonetic
+representation rather than from a native Urdu
+inventory.
+
+\textbf{Space deletion}: Space-deletion errors, where two adjacent Urdu
+tokens are concatenated into a single orthographic
+unit, account for 140 instances across our
+93 stories corpus, on average 1.5 per story. Although
+the absolute rate is low, comparing each fused form
+against its correctly-spaced counterpart reveals a
+model-specific orthographic signature. GPT fuses
+\foreignlanguage{arabic}{ہو} (\textit{ho},
+``be'')\,-auxiliary constructions at substantial
+rates (\foreignlanguage{arabic}{ہوگیا}
+[\textit{hogayā}, ``became''] 41\%,
+\foreignlanguage{arabic}{ہوجاتا}
+[\textit{hojātā}, ``would become''] 40\%,
+\foreignlanguage{arabic}{ہوگا}
+[\textit{hogā}, ``will be''] 67\%), whereas
+DeepSeek and QWEN write the same forms with a space
+in essentially every instance. The pattern inverts
+for \foreignlanguage{arabic}{آ} (\textit{ā},
+``come'')\,-auxiliaries: DeepSeek fuses
+\foreignlanguage{arabic}{آگیا}
+(\textit{āgayā}, ``came'') 44\% and
+\foreignlanguage{arabic}{آگئے}
+(\textit{āga'e}, ``came [pl.]'') 67\% of the time,
+while GPT and QWEN remain near zero. QWEN shows
+almost no fusion of either family. Since each model
+handles a different closed inventory of compounds
+poorly while writing the rest correctly, the errors
+reflect sub-word vocabulary choices in each model's
+tokeniser rather than a shared weakness in Urdu
+generation. Although largely invisible to human
+readers, the distinction matters downstream:
+whitespace-based Urdu NLP pipelines treat
+\foreignlanguage{arabic}{ہوگیا}
+(\textit{hogayā}, fused) and
+\foreignlanguage{arabic}{ہو گیا}
+(\textit{ho gayā}, spaced) as different tokens, and
+if LLM output is reused as synthetic training data,
+as is increasingly common for low-resource
+languages, a model's fusion preferences gain
+additional statistical support and risk
+self-reinforcing contamination of the language's
+digital record. The affected inventory is small and
+model-identifiable, so a lookup-based
+post-processing step can correct it cheaply. 
+
+
+
+\textbf{Em-dash} \label{subsec:auto_errors} Urdu prose 
+conventionally does not employ em-dashes (---) 
+as structural markers; their 
+presence indicates stylistic transfer from 
+English writing conventions. Automatic 
+detection across all 93 stories identified 
+a total of \texttt{623} dash occurrences 
+(avg~=~\texttt{6.6} per story), with 
+\texttt{21} showing the highest frequency.
+Per-model
+distribution and per-category breakdown are reported
+in Table~\ref{tab:em_dash} (Appendix).
+\textbf{xxx} produced the most em-dashes both in
+total and per story, consistent with its higher
+overall rate of English-stylistic transfer.
+%─────────────────────────────────────────
+\subsubsection{Semantic Coherence}
+%─────────────────────────────────────────
+
+Semantic coherence failures (N~=~316, 
+avg~=~3.39 per story) constituted the second 
+largest error category. 
+
+\textbf{Context mismatch.} Context-mismatch errors arise when a generated
+sentence is locally well-formed but conflicts with
+earlier narrative content, a real-world fact, or a
+culturally established script. They occur in
+0.21\% of GPT sentences, 0.44\% of DeepSeek
+sentences, and 0.63\% of QWEN sentences. The
+absolute rates are low, but the cross-model
+ordering matches the QWEN-weakest pattern observed
+for grammar and obliqueness (Section
+\ref{subsec:linguistic_errors}), suggesting that
+narrative coherence is correlated with morphological
+precision rather than independent of it. The
+annotated instances fall into five recurring failure
+modes, each of which reveals a different limitation
+of current Urdu LLMs.
+
+\textit{Kinship-term misuse} is the dominant
+sub-category. Urdu encodes a much finer-grained
+kinship lexicon than English, distinguishing
+paternal from maternal relations
+(\foreignlanguage{arabic}{دادی} \textit{dādī}
+``father's mother'' vs \foreignlanguage{arabic}{نانی}
+\textit{nānī} ``mother's mother''), nephews by
+sibling gender (\foreignlanguage{arabic}{بھتیجا}
+\textit{bhatījā} ``brother's son'' vs
+\foreignlanguage{arabic}{بھانجا} \textit{bhānjā}
+``sister's son''), and address forms by social
+relation. Models routinely collapse these
+distinctions: in one QWEN story, a brother writes
+to his sister calling her son
+\foreignlanguage{arabic}{بھانجا} (\textit{bhānjā},
+``sister's son'') where
+\foreignlanguage{arabic}{بھتیجا} (\textit{bhatījā},
+``brother's son'') is required; a DeepSeek story
+introduces a maternal-side visit but uses
+\foreignlanguage{arabic}{دادی اماں} (\textit{dādī
+ammā}, ``paternal grandmother'') for the
+grandmother encountered there. Address forms are
+similarly over-generalised: QWEN uses
+\foreignlanguage{arabic}{ابا جان} (\textit{abbā
+jān}, ``father, respectful'') for an elderly
+stranger across multiple stories, and a DeepSeek
+wife addresses her husband as
+\foreignlanguage{arabic}{بیٹا} (\textit{beṭā},
+``son''). These errors are consistent with an
+English-mediated representation in which
+``uncle'', ``nephew'', ``grandmother'', and
+``dear'' map onto whichever Urdu term is
+statistically most frequent in the training data,
+regardless of the discourse context.
+
+\textit{Long-range gender breakdown} forms a second
+cluster, mostly observed in DeepSeek. Once a female
+protagonist has been established, the model
+nevertheless produces verbs and adjectives in the
+masculine: a female speaker uses
+\foreignlanguage{arabic}{جانتا} (\textit{jāntā},
+masc.\ ``know'') instead of
+\foreignlanguage{arabic}{جانتی} (\textit{jāntī},
+fem.); a girl on a beach bench is described as
+wearing \foreignlanguage{arabic}{عمامہ}
+(\textit{`imāmah}, ``turban'', a male head-dress);
+two figures including a girl are referred to as
+\foreignlanguage{arabic}{دو نوجوان} (\textit{do
+nau-jawān}, ``two young men''). These are not local
+agreement slips but long-range failures in which
+the discourse-established gender is lost over
+several sentences.
+
+\textit{Cultural and religious anachronism} appears
+in low numbers but high salience. A QWEN story
+describes the appearance of the
+\foreignlanguage{arabic}{مکمل ہلال} (\textit{mukammal
+hilāl}, ``complete crescent'') on Eid, conflating
+the crescent (\foreignlanguage{arabic}{ہلال}
+\textit{hilāl}) that marks the festival with a full
+moon (\foreignlanguage{arabic}{بدر} \textit{badr});
+another describes a moon-sighting in the morning. A
+DeepSeek story has the remains of a Muslim character
+cremated, returned as
+\foreignlanguage{arabic}{راکھ} (\textit{rākh},
+``ash''), and given a funeral with an empty coffin,
+none of which conform to Islamic burial practice. A
+GPT story promotes a chef to
+\foreignlanguage{arabic}{کیپٹن} (\textit{kepṭan},
+``captain''), a term reserved for restaurant
+front-of-house staff in Pakistani usage. The models
+have memorised Urdu vocabulary but not the cultural
+scripts that constrain its use.
+
+\textit{Intra-story contradictions} include
+references to a daughter ``lost five years ago''
+who is nonetheless still being educated in the same
+paragraph (QWEN), a mother said to have sewn a
+blanket after her son had already left (GPT), an
+uncle described as the protagonist's father's
+closest friend (GPT), and the recurring head of a
+man ``killed last year'' (DeepSeek). These reveal a
+lack of persistent state across sentences in
+medium-length narratives.
+
+\textit{Physical and commonsense impossibilities}
+round out the category: a shadow with hair, the
+colour of a claw being visible in mud, a chandelier
+inside a bus, books packed inside a thermos, and a
+wrist-watch from 1947 displaying the date 14
+November 1971. The surface fluency of these
+sentences masks the absence of a world model.
+
+Although Context Mismatch contributes the smallest
+percentage of any linguistic-error category, its
+qualitative profile is the most diagnostic of how
+Urdu LLMs fail. The kinship and cultural sub-types
+in particular indicate that current models reproduce
+Urdu surface forms while operating with an
+English-anchored semantic representation, an
+observation consistent with the cross-lingual
+contamination patterns reported in our spelling
+(Section \ref{subsec:spelling}) and punctuation
+sections.
+
+\textbf{Semantic Anamoly} --- 
+sentences
+that are syntactically well-formed but semantically
+impossible or meaningless. Two distinct patterns emerged. 
+
+\textit{(i) Impossible composition.} GPT's
+\foreignlanguage{arabic}{آگ کے چراغ سے اُبلتی چائے پی رہا تھا}
+(``he was drinking tea boiling from a lamp of fire'')
+is grammatically perfect, but the composition
+violates real-world plausibility: tea does not boil
+from a lamp.
+
+\textit{(ii) Near-synonym confusion.} In DeepSeek's
+\foreignlanguage{arabic}{مالک نے میری ایمانداری اور محنت دیکھ کر مجھے بڑھاوا دے دیا ہے},
+the intended meaning is ``the master promoted me''
+(\foreignlanguage{arabic}{ترقی دے دی}), but the model
+substitutes \foreignlanguage{arabic}{بڑھاوا}
+(\emph{incitement, encouragement}), yielding ``the
+master incited me on seeing my honesty.'' The syntax
+is intact and ergative \foreignlanguage{arabic}{نے} is
+correctly used, but the lexical choice renders the
+sentence semantically incoherent, a failure mode that
+fluent Urdu speakers would not produce.
+
+
+
+\paragraph{Western-Influenced Context Mismatch.}
+A small but qualitatively striking sub-set of
+context-mismatch errors involves the substitution
+of Pakistani objects, institutions, and practices
+with their nearest Western analogues, while the
+surrounding Urdu prose remains fluent. Although
+these instances are too few to dominate any single
+model's overall error rate, they form a coherent
+pattern that reinforces the cross-lingual
+contamination hypothesis raised in our spelling
+and punctuation sections. Three sub-types recur.
+
+\textit{Western material culture in Pakistani
+settings.} A GPT story set in a Punjabi village
+describes the bedroom wall as covered with
+\foreignlanguage{arabic}{پیلا وال پیپر}
+(\textit{pīlā wāl pepar}, ``yellow wallpaper''), an
+interior-decor convention essentially absent from
+rural Pakistani homes, which use lime-wash or
+distemper paint. Another GPT story has a rickshaw
+driver refer to a
+\foreignlanguage{arabic}{گیس اسٹیشن}
+(\textit{gais isṭeshan}, ``gas station''), an
+American term, where Pakistani usage is uniformly
+\foreignlanguage{arabic}{پٹرول پمپ}
+(\textit{paṭrol pamp}, ``petrol pump''). A third
+introduces a
+\foreignlanguage{arabic}{ریفریشمنٹ وین}
+(\textit{rifreshmanṭ wain}, ``refreshment van'')
+inside a Pakistan-Railways train, where the
+corresponding facility is the dining car or the
+chai-trolley vendor. A DeepSeek story has a
+character produce an old photograph from her
+\foreignlanguage{arabic}{پورٹ فولیو}
+(\textit{porṭ folīo}, ``portfolio''), a term
+associated with professional design or finance
+work rather than a personal photo collection.
+
+\textit{Western institutional and role labels.}
+DeepSeek refers to a twelve-year-old grandson as a
+\foreignlanguage{arabic}{بارہ سالہ جونیئر}
+(\textit{bārah sālah jūniyar}, ``twelve-year-old
+junior''), importing the American junior--senior
+school-grade classification into a Pakistani village
+imam's household, where such labels are not used.
+The same model also uses
+\foreignlanguage{arabic}{ہوٹل کے بوائے}
+(\textit{hoṭal ke bo'e}, ``hotel boy'') for a
+restaurant waiter, calquing the colonial
+``boy''-as-servant register, and introduces a
+\foreignlanguage{arabic}{والدین میٹنگ}
+(\textit{wāldain mīṭing}, ``parents meeting'') as
+a literal translation of the English
+``parent--teacher meeting'', whereas the
+established Urdu term is
+\foreignlanguage{arabic}{پی ٹی ایم}
+(\textit{pī ṭī em}).
+
+
+These cases are vanishing
+small in count, but they share a structure that
+makes them especially hazardous for downstream use:
+the Urdu is correct, the Pakistani reader will
+notice the slip immediately, but an automatic
+quality filter will not. If such passages are
+ingested into the training data of a next-generation
+Urdu model, the Western-anchored referent gains
+statistical support relative to its Pakistani
+counterpart, and the language model's representation
+of Pakistani daily life drifts incrementally toward
+its English-language source. This is the same
+self-reinforcing contamination mechanism we identify
+for space-deletion errors
+(Section~\ref{subsec:space_deletion}), now operating
+at the level of cultural ontology rather than
+orthography.
+
+\textbf{Language Register Violations: }A qualitatively distinct failure mode was observed 
+exclusively in DeepSeek: the substitution of Urdu 
+with Punjabi at the phrase and sentence level, where 
+characters switch to Punjabi dialogue within an 
+otherwise Urdu narrative. Unlike the orthographic 
+errors discussed above, this operates at the 
+discourse level and constitutes a direct prompt 
+non-compliance, as the generation prompts explicitly 
+specified Urdu. The pattern suggests that DeepSeek 
+conflates Pakistani linguistic identity with Punjabi, 
+the majority regional language of Pakistan, rather 
+than maintaining the prompted language boundary.
+
+
+\subsubsection{Script Contamination in LLM-Generated Urdu Text}
+
+Beyond lexical foreign word intrusion, automated 
+Unicode-level analysis revealed a more fundamental 
+failure mode: the embedding of non-Urdu script 
+characters, including Latin, Devanagari (Hindi), 
+Chinese (CJK), and Cyrillic  within generated 
+Urdu text. A word was flagged as contaminated if 
+any character in it fell outside the Urdu Unicode 
+range (U+0600--U+06FF) and its standard presentation 
+forms, excluding digits and punctuation. Table 
+\ref{tab:script_contamination} summarises findings 
+across all 93 stories.
+
+DeepSeek exhibited the most severe contamination 
+(61 affected word instances across 15 of 31 stories), 
+followed by QWEN (14 instances, 3 stories) and GPT 
+(11 instances, 6 stories). Contamination manifested 
+in two structural patterns: \textit{pure intrusion}, 
+where an entire word belongs to a foreign script, 
+and \textit{partial contamination}, where a single 
+word contains characters from both Urdu and a foreign 
+script, corrupting an otherwise valid Urdu token.
+
+\textbf{Latin Script Intrusion:} Latin script was the most frequent contaminant 
+across all models (GPT: 7, QWEN: 13, DeepSeek: 47 
+word instances). Pure English word substitution 
+included everyday vocabulary for which standard 
+Urdu equivalents exist --- \textit{hospital}, 
+\textit{career}, \textit{water}, \textit{warmth}, 
+\textit{tight}.
+
+Two partial Latin contaminations merit particular 
+attention. First, QWEN substituted the pilgrimage 
+honorific \foreignlanguage{arabic}{حاجی} with \foreignlanguage{arabic}{ح}aj\foreignlanguage{arabic}{ی} --- replacing 
+the vowel graphemes \foreignlanguage{arabic}{ا} and \foreignlanguage{arabic}{ی} with Latin 
+\textit{a} and \textit{j} , and repeated this 
+malformed token 10 times within a single 
+1,343-word story ً, suggesting a 
+systematic tokenizer failure rather than an incidental 
+error. Second, DeepSeek produced \foreignlanguage{arabic}{کہ}a, where the 
+common Urdu verb \foreignlanguage{arabic}{کہا} (\textit{said}) had its 
+final character replaced by Latin \textit{a}, a 
+substitution that is phonetically equivalent but 
+orthographically invalid, indicating that DeepSeek's 
+decoder resolved an ambiguous token boundary via 
+Latin fallback. Furthermore, \foreignlanguage{arabic}{رسمی}ities, 
+an Urdu adjective \foreignlanguage{arabic}{رسمی} (\textit{formal}) 
+suffixed with the English plural morpheme 
+\textit{-ities}, represents a novel form of 
+\textit{cross-lingual morphological contamination} 
+not previously documented for Urdu LLM outputs, in 
+which English derivational morphology is applied 
+to an Urdu stem.
+
+\textbf{Devanagari (Hindi) Intrusion:} Devanagari intrusion was most prevalent in DeepSeek 
+ and even present in GPT  and 
+QWEN. Given that Urdu and Hindi share 
+extensive phonological overlap, this proximity appears to produce 
+character-level cross-script leakage, where phonetically 
+equivalent Devanagari diacritics substitute for their 
+Urdu counterparts e.g.\foreignlanguage{arabic}{ٹھ}ِِ\foreignlanguage{hindi}{ं} \foreignlanguage{arabic}{ڈی}(\textit{cold}) carries the Devanagari 
+. More severe is 
+\foreignlanguage{arabic}{ک} \foreignlanguage{hindi}{ुत्त} \foreignlanguage{arabic}{وں}, where the Urdu word for 
+\textit{dogs} is partially rendered in Devanagari 
+mid-token, a morpheme-level script switch rather 
+than a diacritic substitution.
+
+\textbf{Chinese and Cyrillic Intrusion:} The most striking contamination instances 
+involve Chinese (CJK) and Cyrillic characters 
+embedded within Urdu tokens. These  scripts have low/no phonological or typological relationship 
+to Urdu, making their presence entirely 
+anomalous. 
+
+In both Chinese and Cyrillic instances, the foreign 
+token is semantically appropriate in context --- 
+\textit{yánsù} (\textit{serious}), 
+\textit{de shēnghuó} (\textit{of life}), 
+\textit{huàtí} (\textit{topic}); 
+\textit{iskrennost'} (\textit{sincerity}) --- 
+however, a missing word boundary caused each token 
+to attach directly to the preceding Urdu word, 
+producing undelimited bilingual compounds. The 
+failure is thus orthographic rather than semantic: 
+DeepSeek selected a valid lexical item from its 
+Chinese or Cyrillic vocabulary where an Urdu 
+equivalent was required, and omitted the 
+delimiting space. The exception is 
+\foreignlanguage{arabic}{پراج} \foreignlanguage{russian}{ек} \foreignlanguage{arabic}{ٹ}, where  
+Cyrillic characters are substituted for 
+similar Urdu phonemes within a single word.
+
+
+
+%─────────────────────────────────────────
+\subsubsection{Named Entity Usage}
+%─────────────────────────────────────────
+
+Annotation of named entity labels recorded 
+how models populate narratives with characters 
+and locations. Person names (PER: N~=~240) 
+were the most frequent entity type, followed 
+by city references (N~=~90) and imaginary 
+places (N~=~7). GPT produced the highest 
+number of named person references (N~=~94), 
+followed by QWEN (N~=~80) and DeepSeek 
+(N~=~66), suggesting variation in how 
+explicitly models anchor narratives to 
+named individuals. Gender representation 
+in protagonist roles is discussed separately 
+in Section~\ref{subsec:gender_bias}.
+
+%─────────────────────────────────────────
+\subsubsection{Gender Representation in 
+              Protagonist Roles}
+\label{subsec:gender_bias}
+%─────────────────────────────────────────
+Across all 93 stories, male protagonists
+outnumbered female protagonists 70 to 19 with
+an overall 3.7:1 ratio
+(Table~\ref{tab:gender}). No model approached gender
+parity. QWEN was the most male-skewed (5.2:1), while
+GPT and DeepSeek shared a 3.1:1 ratio. Four stories
+across the corpus could not be unambiguously
+assigned a single protagonist gender (multi-protagonist
+or animal protagonist) and are excluded from
+Table~\ref{tab:gender}.
+
+This disparity is particularly noteworthy given that
+generation prompts were gender-neutral and contained
+no explicit instruction regarding protagonist gender.
+The consistent male-default pattern across all three
+models suggests that gender bias is encoded in the
+underlying generative behaviour rather than being
+prompt-induced. To test whether the bias persists when
+source titles foreground female experience, we
+examined the subset of UST titles authored by women
+(\foreignlanguage{arabic}{لحاف} --- Ismat Chughtai;
+\foreignlanguage{arabic}{سلطانہ کا خواب} --- Rokeya
+Hossain; \foreignlanguage{arabic}{آگ کا دریا} ---
+Qurratulain Hyder): \textbf{xxx of xxx} generations
+nevertheless centred a male protagonist, indicating
+that the bias is robust to source-author gender. This
+finding aligns with prior work on gender bias in
+neural text generation
+\citep{lucy2021gender, sheng2019woman, xxx}.
+
+\begin{table}[ht]
+
+\caption{Protagonist Gender Distribution by Model}
+\label{tab:gender}
+\scalebox{0.9}{
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} &
+\textbf{Male} &
+\textbf{Female} &
+\textbf{Total} &
+\textbf{M:F Ratio} \\
+\hline
+DeepSeek   & 22 & 7 & 29 & 3.1:1 \\
+GPT        & 22 & 7 & 29 & 3.1:1 \\
+QWEN       & 26 & 5 & 31 & 5.2:1 \\
+\hline
+\textbf{Overall} & \textbf{70} & \textbf{19} & \textbf{89} & \textbf{3.7:1} \\
+\hline
+\end{tabular} }
+\end{table}
+
+\subsection{Source-Engagement Analysis}
+\subsection{Title Repetition and the Three Modes of Source
+            Engagement}
+\label{subsec:title_repetition}
+
+A natural question raised by the linguistic and cultural errors of
+the previous sections is whether the underlying problem is one of
+\emph{language coverage} or one of \emph{text coverage}: does the
+model fail because it cannot speak Urdu well, or because it has
+never read the specific Urdu texts our titles reference? To
+disentangle these we introduce a simple, length-invariant lexical
+diagnostic --- the \textbf{Title Repetition Rate (TRR)} --- and
+show that it cleanly partitions LLM-generated Urdu stories into
+three qualitatively distinct modes of engagement with their source
+material, each determined by the visibility of the source text in
+the model's training data.
+
+
+TRR is defined as the number of exact title-phrase occurrences in
+the body of a generated story (excluding the opening line),
+expressed per 100 words of body text:
+
+\begin{equation}
+    \mathrm{TRR} = \frac{\mathrm{count}(\textit{title\_phrase}
+                                       \in \textit{story\_body})}
+                        {\textit{total\_words}} \times 100
+\end{equation}
+
+Both title and story were normalised before matching by removing
+diacritics, applying character-variant normalisation, stripping punctuation and normalising whitespace.
+
+\paragraph{Three modes emerge from a single metric.}
+Table~\ref{tab:trr_category} shows mean TRR by category and model.
+The ordering is the same for every model and spans a tenfold range,
+revealing three distinct modes of source engagement.
+
+\begin{description}
+  \item[Plot Reproduction (PR)]
+    For globally circulated fables,present in the training
+    data of all three models, often in multiple languages and in
+    children's textbooks worldwide TRR is near zero (TRR $\approx$ 0.06). The model
+    retrieves a complete memorised plot (the thirsty crow drops
+    pebbles, the greedy dog loses its bone) and has no need to
+    re-anchor on the title.
+  \item[Thematic Reproduction (TR)] For Western literary classics translated into Urdu (e.g.\
+    \foreignlanguage{arabic}{لاٹری}, \foreignlanguage{arabic}{اک گھنٹے کی کہانی}, \foreignlanguage{arabic}{  پیلا وال پیپر}),
+    TRR is intermediate 
+        (TRR $\approx$ 0.45). The model invokes a remembered \emph{theme}
+    --- mental-health breakdown, a wife's brief liberation, sudden
+    inversion of fortune --- without retrieving a full plot, and
+    consequently uses the title as a partial anchor.
+  \item[Lexical Title Unpacking (LT) ]
+    For titles drawn from the Urdu literary canon
+    (\foreignlanguage{arabic}{لحاف}, \foreignlanguage{arabic}{اوور کوٹ}, \foreignlanguage{arabic}{گرم کوٹ},
+    \foreignlanguage{arabic}{ٹھنڈا گوشت}), texts that are largely absent
+    from large-scale web pretraining corpora  TRR rises sharply (TRR $\approx$ 0.58, peak 2.79).
+    The model has neither plot nor theme to retrieve; the only
+    object it can anchor on is the surface meaning of the title
+    itself. Chughtai's \foreignlanguage{arabic}{لحاف}, a 1942 short story
+    metaphorising hidden lesbian desire, is rendered by QWEN as a
+    literal narrative about a quilt with the word
+    \foreignlanguage{arabic}{لحاف} repeated 35 times (TRR=2.79).
+    Bedi's \foreignlanguage{arabic}{گرم کوٹ} becomes a story about how to
+    obtain a warm garment. Manto's \foreignlanguage{arabic}{ٹھنڈا گوشت},
+    a story of partition-era trauma and paralysis, becomes a story
+    about cold meat.
+\end{description}
+
+We refer to this overall pattern as the \textbf{Title Lexicalization
+Effect}: in the absence of source-text knowledge, an LLM treats a
+metaphorical title as a literal writing prompt, repeating its
+constituent words far above the rate any human author of the same
+text would use.
+
+Because TRR is computed on raw text rather than on plot content,
+the same metric can be applied to the original Urdu stories. We
+obtained the source texts of \foreignlanguage{arabic}{لحاف},
+\foreignlanguage{arabic}{اوور کوٹ}, \foreignlanguage{arabic}{گرم کوٹ} and
+\foreignlanguage{arabic}{ٹھنڈا گوشت} from Rekhta and computed their
+TRR as a human baseline (Table~\ref{tab:trr_original}). Original
+authors use their title words sparingly (TRR 0.04--0.52), employing
+them as thematic anchors rather than as literal subjects.
+LLM-generated stories on the same titles exceed the original TRR
+in 8 of 9 comparisons (88.9\%), with ratios from 1.4$\times$ to
+12.7$\times$. The extreme cases --- QWEN's
+\foreignlanguage{arabic}{لحاف} at 5.3$\times$ Chughtai's original,
+DeepSeek's \foreignlanguage{arabic}{ٹھنڈا گوشت} at 12.7$\times$
+Manto's --- are precisely the canonical Urdu texts most likely to
+be absent from training data.
+
+TRR is a purely lexical, length-normalised count: it requires no
+LLM judge, no human annotation of story plots, and is therefore
+robust to the methodological concerns that affect more
+content-sensitive evaluation pipelines. The fact that this
+extremely simple metric produces a clean tenfold gradient
+(Fable~0.06 $\to$ Urdu~Lit~0.58) and a clean ordering against
+the human baseline (LLM~$>$~human in 89\% of cases) makes it
+a strong diagnostic for what we argue is the underlying
+phenomenon: contemporary LLMs do not fail at Urdu story
+generation uniformly. They fail in a way that is sharply
+modulated by whether the source text is present in their training
+data. For globally circulated fables they reproduce; for Western
+classics they paraphrase the theme; for the Urdu literary canon
+they fall back on lexical unpacking of the title itself. 
+
+\begin{table}[ht!]
+\caption{Overall TRR statistics per model across all  stories.
+\textit{Avg Count} = mean exact title occurrences per story;
+\textit{Avg Length} = mean story length in words;
+\textit{TRR=0} = number of stories with no title mention.}
+
+\label{tab:trr_overall}
+\centering
+\scalebox{0.75}{
+\begin{tabular}{lcccc}
+\hline
+\textbf{Model} & \textbf{Avg TRR} & \textbf{Avg Count} &
+\textbf{Avg Length} & \textbf{TRR=0} \\
+\hline
+GPT      & 0.397 & 6.06 & 1584.23 & 5 \\
+QWEN     & 0.403 & 5.19 & 1378.87 & 6 \\
+DeepSeek & 0.432 & 8.12 & 1908.29 & 2 \\
+\hline
+\textbf{Overall} & 0.4111 & 6.4624 & 1623.79 & 13 \\
+\hline
+\end{tabular}}
+\end{table}
+
+\begin{table}[h]
+\caption{Average TRR by Story Category and Model. The tenfold
+spread between Fable (0.056) and Urdu Literature (0.581) is the
+quantitative signature of the three modes of source engagement.}
+\label{tab:trr_category}
+\centering
+\scalebox{0.73}{
+\begin{tabular}{lcccc}
+\hline
+\textbf{Category} & \textbf{DeepSeek} & \textbf{GPT} &
+\textbf{QWEN} & \textbf{Avg} \\
+\hline
+Fable \hfill (PR)                & 0.1121 & 0.0138 & 0.0406 & 0.0555 \\
+Neutral Urdu Title \hfill (OR)   & 0.2895 & 0.3559 & 0.2403 & 0.2952 \\
+English Literature \hfill (TR)   & 0.5068 & 0.4550 & 0.3852 & 0.4490 \\
+Urdu Literature \hfill (LT)      & 0.5660 & 0.5124 & 0.6655 & \textbf{0.5813} \\
+\hline
+\textbf{Overall}                 & 0.4329 & 0.3974 & 0.4031 & 0.4111 \\
+\hline
+\end{tabular}}
+\end{table}
+
+% --- keep your existing Table 3 (top repetition cases) here ---
+% --- keep your existing Table 4 (vs original authors) here ---
+
+\subsection{Creativity vs Memorisation
+            for Known Source Texts}
+\label{subsec:memorization}
+
+Section~\ref{subsec:title_repetition} established, via title
+repetition, that LLM behaviour on Urdu story generation
+partitions into three modes determined by source-text
+availability. For the Lexical Title Unpacking mode (Urdu canon),
+the model has no source plot to memorise; the question of
+plot-level memorisation is therefore ill-defined for that
+category. This subsection complements the TRR analysis by asking
+the question that does apply to the remaining categories: when a
+source text \emph{is} plausibly present in the training data
+(global fables and Western literary classics), to what extent
+does the model reproduce its plot, theme and resolution? We
+restrict this analysis to the Fable and English Literature
+categories of Section~\ref{subsec:title_repetition}.
+
+\paragraph{Three-axis structural fingerprint.}
+We characterise each (original, generated) story pair along
+three independent narratological axes, judged by GPT-4o-mini at
+temperature~0 against the original story:
+
+\begin{itemize}
+  \item \textbf{Plot overlap} -- the fraction of the original's
+        abstract plot beats (4--8 character-agnostic events
+        extracted from the original) that recur in the generated
+        story.
+  \item \textbf{Theme overlap} -- semantic similarity of the
+        central messages of the two stories.
+  \item \textbf{Resolution match} -- semantic similarity of the
+        one-sentence narrative endings, compared in isolation.
+\end{itemize}
+
+Each axis is mapped to a boolean using fixed thresholds
+(plot~$\ge$~0.60, theme~$\ge$~0.70, resolution~$\ge$~0.80) and a
+generated story is classified as memorisation when at least two
+of the three axes agree. Crossed with character overlap, this
+yields a 2$\times$2 typology
+(Table~\ref{tab:memorisation_typology}):
+
+\begin{itemize}
+  \item \textbf{Faithful Retelling} -- high structural overlap
+        \emph{with} original characters preserved (acknowledged
+        memorisation, e.g.\ the canonical Thirsty Crow).
+  \item \textbf{Disguised Memorisation} -- high structural
+        overlap \emph{with} characters renamed (e.g.\ the greedy
+        dog rewritten as a greedy cat, plot and moral intact).
+  \item \textbf{Spin-off} -- low overlap, same characters reused
+        in a new plot (rare).
+  \item \textbf{Original} -- low overlap, new characters.
+\end{itemize}
+
+The \emph{Disguised Memorisation} cell is the cell of interest:
+it identifies cases in which the model has reproduced a
+memorised plot while applying cosmetic renaming, which would
+otherwise be missed by surface-level overlap metrics.
+
+\paragraph{Findings.}
+Across the Fable and English Literature subsets
+(n~=~XX titles), QWEN exhibits the highest disguised
+memorisation rate (XX\%), followed by DeepSeek (XX\%) and GPT
+(XX\%). Faithful retellings dominate the Fable subcategory for
+all three models, consistent with the near-zero TRR observed
+there: when a memorised plot is available, the model retrieves
+it and does not need to repeat the title to maintain coherence.
+The English Literature subcategory shows the opposite pattern,
+with thematic reproduction dominating: plot and resolution
+overlap are moderate, theme overlap is high, and character
+overlap is low. This is the structural signature of an LLM that
+has read \emph{about} a story (plot summaries, critical
+commentary) without having memorised the story itself.
+
+\paragraph{Cross-section coherence.}
+The findings of this subsection and of
+Section~\ref{subsec:title_repetition} converge on a single
+picture. When the source text is present in training data
+(Fables, English Literature), the model reproduces it
+structurally and the title fades into the background
+(low~TRR, high plot/theme/resolution overlap). When the source
+text is absent (Urdu Literature), there is no structure to
+reproduce and the title itself becomes the anchor (high TRR, no
+meaningful plot-level reproduction). The Disguised Memorisation
+sub-finding and the Title Lexicalization Effect are therefore
+two faces of the same underlying constraint: contemporary LLMs
+generate Urdu stories conditional on the presence of the
+specific source text in their training corpus, and their
+behaviour gracefully degrades from faithful reproduction
+through thematic paraphrase to lexical title-unpacking as that
+presence diminishes.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Disguised Memorisation 2$\times$2 typology applied to
+the Fable and English Literature subsets. Counts are aggregated
+across the three LLMs.}
+\label{tab:memorisation_typology}
+\begin{tabular}{lcc}
+\hline
+                          & \textbf{Char overlap LOW} & \textbf{Char overlap HIGH} \\
+\hline
+\textbf{2+ axes agree}    & Disguised Memorisation (XX) & Faithful Retelling (XX) \\
+\textbf{$<$2 axes agree}  & Original (XX)                & Spin-off (XX) \\
+\hline
+\end{tabular}
+\end{table}
+\subsection{Cross-Model Structural Analysis}
+\label{sec:networks}
+
+So far we have looked at sentence-level errors, cultural
+mismatches, and how the three LLMs engage with their source
+titles. In this section we step back from individual sentences
+and ask whether the three models produce stories with similar
+social structures, or whether each model has its own style at
+the level of how characters relate to one another.
+
+We adopt the signed character network methodology
+of~\citep{networkpaper2025}, which was originally applied to
+English LLM stories, and apply it to our Urdu corpus. For every
+story we asked GPT-4o-mini at temperature zero to list the
+characters and the relationships between them, labelling each
+relationship as positive (affection, friendship, love),
+negative (conflict, hostility, betrayal), or neutral
+(acquaintance, professional, functional) with an intensity from
+1 to 3. We then built a graph in which characters are nodes and
+relationships are edges, and computed structural measures:
+number of characters and relationships, network density,
+average clustering, the positivity ratio (positive divided by
+signed edges), and the mean signed edge weight (intensity
+scaled to the range $[-1, +1]$). We restrict the analysis to
+the three LLM corpora, each producing 31 stories of
+approximately 2{,}000 words. We explain at the end of the
+subsection why a direct comparison against the human corpus is
+not included.
+
+This network analysis was not exploratory. During the
+linguistic and cultural annotation pass
+(Section~\ref{subsec:linguistic_errors}), the annotators kept
+an informal reading log of qualitative impressions of each
+story. The log repeatedly noted that the generated stories
+felt unusually warm and that QWEN's stories felt the warmest
+of all. The network analysis described below was designed
+specifically to test whether these informal impressions
+corresponded to a measurable structural signal.
+
+\paragraph{The three models write small, similar-sized worlds.}
+On average DeepSeek produces 4.8 characters and 4.2
+relationships per story, GPT produces 4.3 characters and 3.4
+relationships, and QWEN produces 4.0 characters and 3.3
+relationships. Network density is highest for GPT (0.64) and
+lowest for DeepSeek (0.52), with QWEN in between (0.58),
+meaning that GPT casts tend to be more fully connected than
+the other two. Most stories form a single connected social
+group rather than parallel subplots, with the mean number of
+connected components close to 1 for all models.
+Figure~\ref{fig:density_violin} shows the full distribution of
+density across stories.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig3_density_violin.pdf}
+\caption{Distribution of character network density across 31
+stories per model. Each black dot is a single story, the white
+diamond marks the mean. The three distributions overlap
+substantially, but GPT stories are on average more fully
+connected than those of DeepSeek and QWEN.}
+\label{fig:density_violin}
+\end{figure}
+
+\paragraph{All three models are systematically too positive.}
+During the annotation phase, before any network metric was
+computed, the annotators informally noticed that the generated
+stories felt unusually upbeat. Characters reconciled, families
+bonded, and strangers became friends with a frequency that did
+not match either their reading of canonical Urdu fiction or
+their intuition about realistic social interaction. Among the
+three models, QWEN stood out as the most aggressively warm,
+with even conflict-laden source titles often resolving into
+mutual understanding. The network analysis confirms this
+observation quantitatively. When we restrict attention to
+relationships with real emotional content and ignore neutral
+acquaintances, the positivity ratio is 0.79 for DeepSeek, 0.85
+for GPT, and 0.87 for QWEN. Out of every ten emotionally
+charged relationships in these stories, eight or nine are
+friendly or supportive and only one or two involve conflict.
+The median positivity ratio is 1.0 for all three models,
+meaning that more than half of all generated stories contain
+no negative relationship at all
+(Figure~\ref{fig:positivity_violin}). The model ordering the
+annotators perceived (QWEN $>$ GPT $>$ DeepSeek) matches the
+metric ordering exactly. This replicates on Urdu the positivity
+bias that~\citep{networkpaper2025} reported for English LLM
+stories, and suggests that the bias is a property of
+contemporary LLM training rather than of any particular source
+language.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig1_positivity_violin.pdf}
+\caption{Distribution of positivity ratio (positive divided by
+signed edges) per model, with each black dot a story and the
+white diamond the mean. The dashed line marks the neutral 50
+percent point. All three models cluster sharply above 0.5 and
+all three have a median of exactly 1.0, meaning more than half
+of all stories contain no negative relationship.}
+\label{fig:positivity_violin}
+\end{figure}
+
+\paragraph{QWEN amplifies emotional intensity.}
+The annotators also independently noticed, in the same reading
+pass, that QWEN's positive relationships did not feel merely
+positive but \emph{intensely} positive: lifelong devotion in
+place of friendship, profound transformation in place of modest
+reconciliation. The metric agrees. The mean signed edge weight
+is 0.37 for DeepSeek, 0.45 for GPT, and 0.49 for QWEN. The
+unsigned average follows the same ordering at 1.10, 1.26, and
+1.37. QWEN does not only add positive edges, it dials them up.
+Relationships in QWEN stories are more often portrayed as deep
+and devoted rather than casual or moderate
+(Figure~\ref{fig:intensity_violin}). This is consistent with
+our earlier finding (Section~\ref{subsec:memorization}) that
+QWEN shows the highest disguised memorisation rate. The same
+model that most strongly anchors to source-style plots also
+produces the most emotionally polarised relationships.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig2_intensity_violin.pdf}
+\caption{Distribution of mean signed edge weight per story on
+the [-1, +1] scale. QWEN shifts further toward +1 than GPT or
+DeepSeek, indicating that QWEN's relationships are not only
+more often positive but also more intense.}
+\label{fig:intensity_violin}
+\end{figure}
+
+\paragraph{The three models invent almost entirely different
+characters from the same prompt.}
+For each of the 31 shared prompts we computed the Jaccard
+overlap of the character sets produced by every pair of
+models. The numbers are striking. The mean overlap is 0.025
+for GPT and QWEN, 0.021 for GPT and DeepSeek, and 0.019 for
+DeepSeek and QWEN. The median overlap is exactly zero for
+every pair, meaning that for more than half of all prompts no
+two models named even a single character in common
+(Figure~\ref{fig:jaccard_overlap}). Even with the same Urdu
+title and the same word budget, the three models populate the
+story with completely different people. This tells us two
+things. First, the structural patterns we report above
+(positivity, intensity) are not driven by all three models
+pulling characters from the same shared template. Each model
+has its own preferences. Second, if these three models were
+used together to generate synthetic Urdu training data, they
+would explore very different parts of the character space
+rather than reinforcing the same narrative templates.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.85\linewidth]{figures/fig4_jaccard_overlap.pdf}
+\caption{Jaccard overlap of character sets between LLM pairs
+on the same prompt. Bars show the mean across 31 prompts with
+95 percent confidence intervals, black dots show individual
+prompts. Mean overlap is below 3 percent for every pair and
+the median is exactly zero, meaning that for the majority of
+prompts the three models share no characters at all.}
+\label{fig:jaccard_overlap}
+\end{figure}
+
+\paragraph{Why we do not compare to human stories here.}
+A natural question is how these LLM networks compare against
+human-authored Urdu short stories. We chose not to make that
+comparison in this section, and we want to be open about why.
+Our human reference stories are published Urdu short fiction
+by authors such as Manto, Chughtai, Bedi, and Krishan Chander,
+and they are typically 5{,}000 to 15{,}000 words long. Our LLM
+stories are constrained to roughly 2{,}000 words. A longer
+story naturally has room for more incidental and functional
+characters such as shopkeepers, neighbours, and passing
+acquaintances. These characters add to the total count and
+appear in the network as neutral edges. A shorter story simply
+does not have room for them. A direct human-vs-LLM comparison
+on character counts or neutral edge proportions would
+therefore be confounded by length rather than by authorship.
+We considered truncating the human stories to 2{,}000 words
+but rejected this option, because it would discard the
+resolution and closing character introductions of most
+published short stories and replace a length confound with a
+worse truncation artefact. We therefore restrict the network
+analysis to comparisons between the LLMs, where every model
+operates under the same generation constraints, and leave a
+controlled length-matched human-LLM comparison for future
+work.
+
+\begin{table}[h]
+\centering
+\small
+\caption{Character network structural metrics, averaged across
+31 stories per model. All LLM outputs were generated under an
+identical 2{,}000-word target.}
+\label{tab:network_metrics}
+\begin{tabular}{lccc}
+\hline
+\textbf{Metric} & \textbf{GPT} & \textbf{DeepSeek} & \textbf{QWEN} \\
+\hline
+Mean characters per story        & 4.3  & 4.8  & 4.0 \\
+Mean relationships per story     & 3.4  & 4.2  & 3.3 \\
+Mean network density             & 0.64 & 0.52 & 0.58 \\
+Mean clustering coefficient      & 0.12 & 0.24 & 0.19 \\
+Positivity ratio (signed)        & 0.85 & 0.79 & 0.87 \\
+Negativity ratio (signed)        & 0.15 & 0.21 & 0.13 \\
+Mean signed edge weight          & 0.45 & 0.37 & 0.49 \\
+Mean unsigned edge weight        & 1.26 & 1.10 & 1.37 \\
+\hline
+\end{tabular}
+\end{table}
+
+\begin{table}[h]
+\centering
+\small
+\caption{Jaccard overlap of character sets between LLM pairs
+on the same prompt. The three models share almost no
+characters even when given identical Urdu titles.}
+\label{tab:pairwise_overlap}
+\begin{tabular}{lccc}
+\hline
+\textbf{Model pair}  & \textbf{Mean} & \textbf{Median} & \textbf{N prompts} \\
+\hline
+GPT and DeepSeek     & 0.021 & 0.000 & 31 \\
+GPT and QWEN         & 0.025 & 0.000 & 31 \\
+DeepSeek and QWEN    & 0.019 & 0.000 & 31 \\
+\hline
+\end{tabular}
+\end{table}
+\begin{table*}[htbp]
+\centering
+
+\caption{
+Top Repetition Cases Across Literary Title Sources and LLMs.
+TSST = Translated Short Story Title,
+UST = Urdu Short Story Title.
+}
+
+\label{tab:top_repetition_cases}
+
+\scriptsize
+\renewcommand{\arraystretch}{1.2}
+
+\begin{tabular}{p{8cm} c l c}
+\hline
+
+\textbf{Title (ALA-LC Transliteration / English Translation)} &
+\textbf{Source} &
+\textbf{Model} &
+\textbf{Repetition Count (Rate per 100)} \\
+
+\hline
+
+\multirow{2}{*}{
+\makecell[l]{
+\foreignlanguage{arabic}{خط} \\
+(Khaṭ / The Letter)
+}}
+& \multirow{2}{*}{TSST}
+& DeepSeek & 61 (3.27) \\
+& & GPT & 33 (2.08) \\
+
+\hline
+
+\multirow{3}{*}{
+\makecell[l]{
+\foreignlanguage{arabic}{لحاف} \\
+(Liḥāf / The Quilt)
+}}
+& \multirow{3}{*}{UST}
+& QWEN & 35 (2.79) \\
+& & DeepSeek & 28 (1.30) \\
+& & GPT & 17 (1.17) \\
+
+\hline
+
+\multirow{2}{*}{
+\makecell[l]{
+\foreignlanguage{arabic}{اوور کوٹ} \\
+(Ōvar Koṭ / The Overcoat)
+}}
+& \multirow{2}{*}{UST}
+& DeepSeek & 35 (1.76) \\
+& & QWEN & 19 (1.41) \\
+
+\hline
+
+\makecell[l]{
+\foreignlanguage{arabic}{لاٹری} \\
+(Lāṭrī / The Lottery)
+}
+& TSST
+& GPT & 20 (1.16) \\
+
+\hline
+
+\makecell[l]{
+\foreignlanguage{arabic}{گرم کوٹ} \\
+(Garm Koṭ / Warm Coat)
+}
+& UST
+& DeepSeek & 17 (1.03) \\
+
+\hline
+
+\makecell[l]{
+\foreignlanguage{arabic}{خاموش اذان} \\
+(Khāmōsh Az̤ān / Silent Call to Prayer)
+}
+& UST
+& GPT & 16 (1.14) \\
+
+\hline
+
+\end{tabular}
+\end{table*}
+
+
+\begin{table*}[htbp]
+\centering
+\caption{TRR: Original Authors vs LLM-Generated Stories}
+\label{tab:trr_original}
+\begin{tabular}{llccccc}
+\hline
+\textbf{Title} & 
+\textbf{Author} & 
+\textbf{\shortstack{Orig\\TRR}} & 
+\textbf{GPT} & 
+\textbf{QWEN} & 
+\textbf{DS} & 
+\textbf{\shortstack{Avg\\Ratio}} \\
+\hline
+\foreignlanguage{arabic}{لحاف}     & Ismat Chughtai  
+    & 0.52 
+    & 1.17 {\small(2.2$\times$)} 
+    & 2.79 {\small(5.3$\times$)} 
+    & 1.30 {\small(2.5$\times$)} 
+    & 3.3$\times$ \\
+\foreignlanguage{arabic}{اوور کوٹ} & Ghulam Abbass 
+    & 0.41 
+    & 0.59 {\small(1.4$\times$)} 
+    & 1.41 {\small(3.4$\times$)} 
+    & 1.76 {\small(4.3$\times$)} 
+    & 3.0$\times$ \\
+\foreignlanguage{arabic}{گرم کوٹ}  & Rajinder Singh Baidi   
+    & 0.33 
+    & 0.16 {\small(0.5$\times$)}$^\dagger$
+    & 1.13 {\small(3.4$\times$)} 
+    & 1.03 {\small(3.1$\times$)} 
+    & 2.3$\times$ \\
+\foreignlanguage{arabic}{ٹھنڈا گوشت}  & Sadat Hassan Manto   
+    & 0.04
+    & 0.48 {\small(10.6$\times$)}
+    & 0.05 {\small(1.3$\times$)} 
+    & 0.57 {\small(12.7$\times$)} 
+    & 8.2$\times$ \\
+\hline
+\multicolumn{7}{l}{{\small $^\dagger$ GPT decomposed the 
+title, using \foreignlanguage{arabic}{کوٹ} alone extensively 
+(see Section~\ref{subsec:trr_limit}).}}\\
+\hline
+\end{tabular}
+\end{table*}
+
+%─────────────────────────────────────────
+\section{Limitations}
+\label{subsec:trr_limit}
+%─────────────────────────────────────────
+
+Exact-phrase TRR may underestimate title anchoring when 
+models decompose multi-word titles. GPT's \foreignlanguage{arabic}{گرم کوٹ} 
+(TRR~=~0.16) illustrates this: the exact phrase appeared 
+only 3 times, yet \foreignlanguage{arabic}{کوٹ} alone was used extensively 
+throughout --- depicting a character with a \foreignlanguage{arabic}{شال} 
+aspiring to own a \foreignlanguage{arabic}{گرم کوٹ}. Partial-word matching 
+and synonym detection represent directions for future 
+refinement of the TRR metric.
+
+%─────────────────────────────────────────
+% FIGURES
+%─────────────────────────────────────────
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=\linewidth]
+        {figures/plot2_category_comparison.png}
+    \caption{Average TRR by story category and model. 
+    Urdu Literature titles show consistently highest TRR, 
+    reflecting systematic literal interpretation of 
+    metaphorical titles.}
+    \label{fig:trr_category}
+\end{figure}
+
+
+
+\section{Conclusion}
+This study demonstrates that while modern LLMs can generate fluent Urdu narratives, significant challenges remain in cultural grounding and linguistic precision. 
+\bibliography{custom}
+
+\appendix
+
+\section{Appendix}
+\label{sec:appendix}
+\begin{table*}[htbp]
+\centering
+\caption{Manual Annotation Counts by Label and Model}
+\label{tab:error_summary}
+\begin{tabular}{llcccc}
+\hline
+\textbf{Category} &
+\textbf{Label} &
+\textbf{GPT} &
+\textbf{QWEN} &
+\textbf{DS} &
+\textbf{Total} \\
+\hline
+\multirow{4}{*}{Linguistic}
+  & Grammar Error & 72  & 138 & 106  & 316 \\
+  & Agreement Error     & 41   & 92   & 39   & 172   \\
+  & Spelling Error      & 16  & 40  & 52  & 108  \\
+  & Space Deletion      & 79  & 11   & 50  & 140  \\
+  & Em-Dash      & 261  & 320   & 42  & 623  \\
+  
+
+\cline{2-6}
+  & \textbf{Subtotal}   & \textbf{469} & \textbf{601} 
+                        & \textbf{289} & \textbf{1359} \\
+\hline
+\multirow{4}{*}{Semantic}
+ 
+  & Context Mismatch    & 8  & 21  & 21  & 50  \\
+  & Semantic Anomaly             & 41  & 92  & 39   & 172  \\
+  & Western Influenced Cultural Mismatch            & 3  & 0  & 5   & 8  \\
+  & Script Contamination             & 11  & 14  & 61   & 86  \\
+  
+\cline{2-6}
+  & \textbf{Subtotal}   & \textbf{63} & \textbf{127} 
+                        & \textbf{126} & \textbf{316} \\
+\hline
+
+\hline
+\multicolumn{2}{l}{\textbf{Total Errors}}
+  & \textbf{--} & \textbf{--} 
+  & \textbf{--} & \textbf{--} \\
+\hline
+\multirow{4}{*}{Entities}
+  & PER                 & --  & --  & --  & -- \\
+  & City                & --  & --  & --  & --  \\
+  & MaleProtag     & 22   & 26   & 22   & 70   \\
+  & FemaleProtag     & 7   & 5   & 7   & 19   \\
+\cline{2-6}
+  & \textbf{Subtotal}   & \textbf{--} & \textbf{--} 
+                        & \textbf{--} & \textbf{--} \\
+\hline
+\end{tabular}
+\end{table*}
+
+\begin{table*}[htbp]
+\centering\small
+\caption{Em-dash usage per model.}
+\label{tab:em_dash}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Model} & \textbf{Total} & \textbf{Avg} &\textbf{Min} &\textbf{Max} \\
+\midrule
+GPT      & 261 & 8.4 & 0 & 18 \\
+QWEN     & 320 & 10.32 & 3&21 \\
+DeepSeek & 42 & 1.35 & 0&17 \\
+\midrule
+\textbf{Overall} & \textbf{623} & \textbf{6.7} & 
+\textbf{0}&
+\textbf{21} \\
+\bottomrule
+\end{tabular}
+\end{table*}
+%─────────────────────────────────────────
+% APPENDIX TABLE
+%─────────────────────────────────────────
+\section{Full Story Title Corpus}
+\label{app:titles}
+
+Table~\ref{tab:title_full_list} lists all 31 titles with
+their original authors (where applicable), source category,
+and ALA-LC transliteration. Per-title generation statistics
+appear in Table~\ref{tab:avg_repetition_cases}.
+
+\begin{table*}[htbp]
+\centering\scriptsize
+\renewcommand{\arraystretch}{1.2}
+\caption{Complete list of 31 story titles used in this study.
+TSST = Translated Short Story Title (English origin);
+UST = Urdu Short Story Title (canonical Urdu/South-Asian
+literature); Fable = traditional moral tale;
+NUT = Neutral Urdu Title (composed by authors).}
+\label{tab:title_full_list}
+\begin{tabular}{c p{4.2cm} p{3.5cm} p{3.8cm} c}
+\toprule
+\textbf{ID} & \textbf{Title (Urdu)} &
+\textbf{Transliteration / English} &
+\textbf{Original Author / Source} & \textbf{Cat.} \\
+\midrule
+1  & \foreignlanguage{arabic}{ایمان کا سفر}      & Īmān kā Safar / Journey of Faith       & --- (composed)              & NUT   \\
+2  & \foreignlanguage{arabic}{آخری ٹرین}         & Ākhrī Ṭrēn / The Last Train             & --- (composed)              & NUT   \\
+3  & \foreignlanguage{arabic}{سوات کی شام}       & Swāt kī Shām / Evening in Swat          & --- (composed)              & NUT   \\
+4  & \foreignlanguage{arabic}{آخری بس}           & Ākhrī Bas / The Last Bus                & --- (composed)              & NUT   \\
+5  & \foreignlanguage{arabic}{عید کا نیا چاند}   & ʿĪd kā Nayā Chānd / The New Moon of Eid & --- (composed)              & NUT   \\
+6  & \foreignlanguage{arabic}{ایمان کی تلاش}     & Īmān kī Talāsh / Search for Faith       & --- (composed)              & NUT   \\
+7  & \foreignlanguage{arabic}{پیلا وال پیپر}     & Pīlā Vāl Pēpar / The Yellow Wallpaper   & Charlotte P.\ Gilman        & TSST  \\
+8  & \foreignlanguage{arabic}{لاٹری}             & Lāṭrī / The Lottery                     & Shirley Jackson             & TSST  \\
+9  & \foreignlanguage{arabic}{بندر کا پنجہ}      & Bandar kā Panjah / The Monkey's Paw     & W.\ W.\ Jacobs              & TSST  \\
+10 & \foreignlanguage{arabic}{دوسری عورت}        & Dūsrī ʿAurat / The Second Woman         & (Urdu literary tradition)   & UST   \\
+11 & \foreignlanguage{arabic}{ٹھنڈا گوشت}        & Ṭhanḍā Gōsht / Cold Meat                & Saadat Hasan Manto          & UST   \\
+12 & \foreignlanguage{arabic}{خاموش اذان}        & Khāmōsh Az̤ān / Silent Call to Prayer   & --(composed)  & UST   \\
+13 & \foreignlanguage{arabic}{خرگوش اور کچھوا}   & Khargōsh aur Kachhwā / Hare and Tortoise & Aesop / Folk                & Fable \\
+14 & \foreignlanguage{arabic}{پیاسا کوا}         & Piyāsā Kawwā / The Thirsty Crow         & Aesop / Folk                & Fable \\
+15 & \foreignlanguage{arabic}{بیوقوف گدھا}       & Bēwaqūf Gadhā / The Foolish Donkey      & Folk                        & Fable \\
+16 & \foreignlanguage{arabic}{اندھا آدمی اور ہاتھی} & Andhā Ādmī aur Hāthī / Blind Men \& Elephant & John G.\ Saxe          & TSST  \\
+17 & \foreignlanguage{arabic}{لحاف}              & Liḥāf / The Quilt                       & Ismat Chughtai              & UST   \\
+18 & \foreignlanguage{arabic}{جلا وطن}           & Jalā Waṭan / Exiled                     & Ghulam Abbas   & UST   \\
+19 & \foreignlanguage{arabic}{آگ کا دریا}        & Āg kā Daryā / River of Fire             & Qurratulain Hyder           & UST   \\
+20 & \foreignlanguage{arabic}{گرم کوٹ}           & Garm Koṭ / Warm Coat                    & Rajinder Singh Bedi         & UST   \\
+21 & \foreignlanguage{arabic}{اوور کوٹ}          & Ōvar Koṭ / The Overcoat                 & Ghulam Abbas                & UST   \\
+22 & \foreignlanguage{arabic}{لالچی کتا}         & Lālchī Kuttā / The Greedy Dog           & Aesop / Folk                & Fable \\
+23 & \foreignlanguage{arabic}{پچھتاوا}           & Pachtāwā / Regret                       & (Urdu literary tradition)           & UST  \\
+24 & \foreignlanguage{arabic}{سر کٹا سوار}       & Sar Kaṭā Sawār / The legend of Sleepy Hollow     & Washington Irving           & TSST  \\
+25 & \foreignlanguage{arabic}{ایک گھنٹے کی کہانی} & Ek Ghanṭē kī Kahānī / Story of an Hour & Kate Chopin                 & TSST  \\
+26 & \foreignlanguage{arabic}{پہاڑی کی برف}      & Pahāṛī kī Barf / The Snows of Kilimanjaro   & Ernest Hemingway            & TSST  \\
+27 & \foreignlanguage{arabic}{لڑکے اور لڑکیاں}   & Laṛkē aur Laṛkiyāṅ / Boys and Girls     & Alice Munro                 & TSST  \\
+28 & \foreignlanguage{arabic}{سلطانہ کا خواب}    & Sulṭānah kā Khwāb / Sultana's Dream     & Rokeya S.\ Hossain          & UST   \\
+29 & \foreignlanguage{arabic}{خاتون یا شیر}      & Khātūn yā Shēr / The Lady or the Tiger  & Frank R.\ Stockton          & TSST  \\
+30 & \foreignlanguage{arabic}{خط}                & Khaṭ / The Letter                       & Anton Chekhov               & TSST  \\
+31 & \foreignlanguage{arabic}{پت جھڑ کی آواز}    & Pat Jhaṛ kī Āwāz / Sound of Autumn Leaves & Qurratulain Hyder& UST   \\
+\bottomrule
+\end{tabular}
+\end{table*}
+\begin{table*}[htbp]
+\centering
+\caption{Script Contamination Summary by Model}
+\label{tab:script_contamination}
+\begin{tabular}{lcccc}
+\hline
+\textbf{Metric} & 
+\textbf{GPT} & 
+\textbf{QWEN} & 
+\textbf{DeepSeek} & 
+\textbf{Total} \\
+\hline
+Affected stories        & 6  & 3  & 15 & 24 \\
+Total contaminated words& 11 & 14 & 61 & 86 \\
+\quad Pure intrusion    & 8  & 3  & 42 & 53 \\
+\quad Partial mixed     & 3  & 11 & 19 & 33 \\
+\hline
+\multicolumn{5}{l}{\textit{By Script}} \\
+\quad Latin (English)   & 7  & 13 & 47 & 67 \\
+\quad Devanagari (Hindi)& 3  & 1  & 9  & 13 \\
+\quad Chinese (CJK)     & 0  & 0  & 3  & 3  \\
+\quad Cyrillic          & 1  & 0  & 2  & 3  \\
+\hline
+\end{tabular}
+\end{table*}
+\begin{table*}[htbp]
+\centering
+
+\caption{
+Average Title Repetition Rates Across Stories.
+TSST = Translated Short Story Title,
+UST = Urdu Short Story Title,
+NUT = Neutral Urdu Title.
+}
+
+\label{tab:avg_repetition_cases}
+
+\scriptsize
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabular}{c p{5cm} c c c}
+\hline
+
+\textbf{Story ID} &
+\textbf{Title (ALA-LC Transliteration / English Translation)} &
+\textbf{Source} &
+\textbf{Avg.\ TRR} &
+\textbf{Avg.\ Count} \\
+
+\hline
+
+1 &
+\makecell[l]{
+\foreignlanguage{arabic}{ایمان کا سفر} \\
+(Īmān kā Safar / Journey of Faith)
+}
+& NUT & 0.2459 & 3.6667 \\
+
+2 &
+\makecell[l]{
+\foreignlanguage{arabic}{آخری ٹرین} \\
+(Ākhrī Ṭrēn / The Last Train)
+}
+& NUT & 0.6595 & 8.6667 \\
+
+3 &
+\makecell[l]{
+\foreignlanguage{arabic}{سوات کی شام} \\
+(Swāt kī Shām / Evening in Swat)
+}
+& NUT & 0.2165 & 3.0000 \\
+
+4 &
+\makecell[l]{
+\foreignlanguage{arabic}{آخری بس} \\
+(Ākhrī Bas / The Last Bus)
+}
+& NUT & 0.3025 & 5.0000 \\
+
+5 &
+\makecell[l]{
+\foreignlanguage{arabic}{عید کا نیا چاند} \\
+(ʿĪd kā Nayā Chānd / The New Moon of Eid)
+}
+& NUT & 0.1254 & 2.0000 \\
+
+6 &
+\makecell[l]{
+\foreignlanguage{arabic}{ایمان کی تلاش} \\
+(Īmān kī Talāsh / Search for Faith)
+}
+& NUT & 0.2215 & 3.3333 \\
+
+7 &
+\makecell[l]{
+\foreignlanguage{arabic}{پیلا وال پیپر} \\
+(Pīlā Vāl Pēpar / The Yellow Wallpaper)
+}
+& TSST & 0.3524 & 4.0000 \\
+
+8 &
+\makecell[l]{
+\foreignlanguage{arabic}{لاٹری} \\
+(Lāṭrī / The Lottery)
+}
+& TSST & 0.9110 & 15.0000 \\
+
+9 &
+\makecell[l]{
+\foreignlanguage{arabic}{بندر کا پنجہ} \\
+(Bandar kā Panjah / The Monkey's Paw)
+}
+& TSST & 0.3188 & 5.6667 \\
+
+10 &
+\makecell[l]{
+\foreignlanguage{arabic}{دوسری عورت} \\
+(Dūsrī ʿAurat / The Second Woman)
+}
+& UST & 0.2804 & 5.6667 \\
+
+11 &
+\makecell[l]{
+\foreignlanguage{arabic}{ٹھنڈا گوشت} \\
+(Ṭhanḍā Gōsht / Cold Meat)
+}
+& UST & 0.3720 & 5.6667 \\
+
+12 &
+\makecell[l]{
+\foreignlanguage{arabic}{خاموش اذان} \\
+(Khāmōsh Az̤ān / Silent Call to Prayer)
+}
+& UST & 0.4921 & 7.3333 \\
+
+13 &
+\makecell[l]{
+\foreignlanguage{arabic}{خرگوش اور کچھوا} \\
+(Khargōsh aur Kachhwā / The Hare and the Tortoise)
+}
+& Fable & 0.0219 & 0.3333 \\
+
+14 &
+\makecell[l]{
+\foreignlanguage{arabic}{پیاسا کوا} \\
+(Piyāsā Kawwā / The Thirsty Crow)
+}
+& Fable & 0.0228 & 0.3333 \\
+
+15 &
+\makecell[l]{
+\foreignlanguage{arabic}{بیوقوف گدھا} \\
+(Bēwaqūf Gadhā / The Foolish Donkey)
+}
+& Fable & 0.1589 & 3.0000 \\
+
+16 &
+\makecell[l]{
+\foreignlanguage{arabic}{اندھا آدمی اور ہاتھی} \\
+(Andhā Ādmī aur Hāthī / The Blind Man and the Elephant)
+}
+& TSST & 0.0000 & 0.0000 \\
+
+17 &
+\makecell[l]{
+\foreignlanguage{arabic}{لحاف} \\
+(Liḥāf / The Quilt)
+}
+& UST & 1.7525 & 26.6667 \\
+
+18 &
+\makecell[l]{
+\foreignlanguage{arabic}{جلا وطن} \\
+(Jalā Waṭan / Exiled)
+}
+& UST & 0.2507 & 4.3333 \\
+
+19 &
+\makecell[l]{
+\foreignlanguage{arabic}{آگ کا دریا} \\
+(Āg kā Daryā / River of Fire)
+}
+& UST & 0.3410 & 5.0000 \\
+
+20 &
+\makecell[l]{
+\foreignlanguage{arabic}{گرم کوٹ} \\
+(Garm Koṭ / Warm Coat)
+}
+& UST & 0.7702 & 10.6667 \\
+
+21 &
+\makecell[l]{
+\foreignlanguage{arabic}{اوور کوٹ} \\
+(Ōvar Koṭ / The Overcoat)
+}
+& UST & 1.2524 & 21.3333 \\
+
+22 &
+\makecell[l]{
+\foreignlanguage{arabic}{لالچی کتا} \\
+(Lālchī Kuttā / The Greedy Dog)
+}
+& Fable & 0.0184 & 0.3333 \\
+
+23 &
+\makecell[l]{
+\foreignlanguage{arabic}{پچھتاوا} \\
+(Pachtāwā / Regret)
+}
+& TSST & 0.2198 & 4.0000 \\
+
+24 &
+\makecell[l]{
+\foreignlanguage{arabic}{سر کٹا سوار} \\
+(Sar Kaṭā Sawār / The Headless Horseman)
+}
+& TSST & 0.3038 & 5.3333 \\
+
+25 &
+\makecell[l]{
+\foreignlanguage{arabic}{ایک گھنٹے کی کہانی} \\
+(Ek Ghanṭē kī Kahānī / The Story of an Hour)
+}
+& TSST & 0.0791 & 1.3333 \\
+
+26 &
+\makecell[l]{
+\foreignlanguage{arabic}{پہاڑی کی برف} \\
+(Pahāṛī kī Barf / Snow of the Mountain)
+}
+& TSST & 0.1813 & 3.0000 \\
+
+27 &
+\makecell[l]{
+\foreignlanguage{arabic}{لڑکے اور لڑکیاں} \\
+(Laṛkē aur Laṛkiyāṅ / Boys and Girls)
+}
+& TSST & 0.1513 & 2.3333 \\
+
+28 &
+\makecell[l]{
+\foreignlanguage{arabic}{سلطانہ کا خواب} \\
+(Sulṭānah kā Khwāb / Sultana's Dream)
+}
+& UST & 0.0156 & 0.3333 \\
+
+29 &
+\makecell[l]{
+\foreignlanguage{arabic}{خاتون یا شیر} \\
+(Khātūn yā Shēr / The Lady or the Tiger)
+}
+& TSST & 0.0755 & 1.3333 \\
+
+30 &
+\makecell[l]{
+\foreignlanguage{arabic}{خط} \\
+(Khaṭ / The Letter)
+}
+& TSST & 2.3459 & 36.6667 \\
+
+31 &
+\makecell[l]{
+\foreignlanguage{arabic}{پت جھڑ کی آواز} \\
+(Pat Jhaṛ kī Āwāz / Sound of Autumn Leaves)
+}
+& UST & 0.2860 & 5.0000 \\
+
+\hline
+\end{tabular}
+\end{table*}
+
+
+\end{document}
