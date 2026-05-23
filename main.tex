@@ -85,9 +85,10 @@ In this work, we question how well contemporary multilingual LLMs are grounded i
 Concretely, we examine whether LLM-generated Urdu stories preserve contextual relevance, avoid formulaic narrative patterns, and handle culturally sensitive themes appropriately, whether those themes originate from Urdu literary traditions or are adapted from Western sources. This leads us to the following research questions:
 
 \begin{itemize}
-\item \textbf{Originality.} Do LLMs generate original Urdu narratives, or reproduce remembered source texts, and how does this reproduction degrade as source-text visibility in training data decreases?
+
 \item \textbf{Linguistic and semantic accuracy.} How accurately do LLMs handle Urdu-specific grammar and do their stories remain semantically coherent at the sentence and discourse level?
 \item \textbf{Cultural fidelity.} To what extent do generated stories preserve Pakistani cultural context?
+\item \textbf{Originality.} Do LLMs generate original Urdu narratives, or reproduce remembered source texts, and how does this reproduction degrade as source-text visibility in training data decreases?
 \item \textbf{Narrative structure.} What structural patterns  characterise LLM-generated Urdu stories, and how do they differ across models?
 \item \textbf{Tractability.} Which of the above failures can be remediated by targeted prompting?
 \end{itemize}
@@ -266,11 +267,10 @@ FemaleProtag.    & U & Main female character.
 \end{tabular}
 \end{table*}
 
-\section{Qualitative Analysis}
-Several models generated grammatically correct Urdu but failed to preserve culturally authentic Pakistani dialogues and naming conventions.
 
 
-\subsection{Linguistic and Semantic Accuracy}
+
+\section{Linguistic and Semantic Accuracy}
 
 Manual annotation of all 93 generated stories 
 identified 
@@ -282,7 +282,7 @@ Table~\ref{tab:error_summary} presents
 the complete breakdown.
 
 %─────────────────────────────────────────
-\subsubsection{Linguistic Errors}
+\subsection{Linguistic Errors}
 %─────────────────────────────────────────
 
 Linguistic errors constituted the largest share 
@@ -473,13 +473,13 @@ in Table~\ref{tab:em_dash} (Appendix).
 total and per story, consistent with its higher
 overall rate of English-stylistic transfer.
 %─────────────────────────────────────────
-\subsubsection{Semantic Coherence}
+\subsection{Semantic Coherence}
 %─────────────────────────────────────────
 
 Semantic coherence failures constituted the second 
 largest error category. 
 
-\textbf{Semantic Anamoly.} 
+\textbf{Semantic Anomaly.} 
 Sentences
 that are syntactically well-formed but semantically
 impossible or meaningless. Two distinct patterns emerged. 
@@ -613,7 +613,7 @@ English-anchored semantic representation.
 
 
 
-\subsection{Cultural and Script Fidelity}
+\section{Cultural and Script Fidelity}
  \label{sec:cultural}A small but qualitatively striking sub-set of
 context-mismatch errors involves the substitution
 of Pakistani objects, institutions, and practices
@@ -735,8 +735,8 @@ neural text generation
 \citep{genderbiasllmgenerated2025,VANBLERCK2025100972}.
 
 
-\subsection{Originality: Source Engagement and Memorisation}
-\subsubsection{Title Repetition and Three Modes of Source Engagement}
+\section{Originality: Source Engagement and Memorisation}
+\subsection{Title Repetition and Three Modes of Source Engagement}
 \label{subsec:title_repetition}
 
 A natural question raised by the linguistic and cultural
@@ -838,7 +838,7 @@ Urdu Literature \hfill (LT)    & 0.57 & 0.51 & 0.67 & \textbf{0.58} \\
 \end{tabular}
 \end{table}
 
-\subsubsection{Memorisation on Known Source Texts}
+\subsection{Memorisation on Known Source Texts}
 \label{subsec:memorization}
 
 The Lexical Title Unpacking mode of
@@ -929,7 +929,7 @@ Composite score        & \textbf{0.50} & 0.43 & 0.27 \\
 \end{tabular}
 \end{table}
 
-\subsection{Narrative Structure: Character Networks}
+\section{Narrative Structure: Character Networks}
 \label{sec:networks}
 
 During annotation it was observed that the generated
@@ -1192,8 +1192,8 @@ QWEN       & 26 & 5 & 31 & 5.2:1 \\
   & \textbf{--} & \textbf{--} \\
 \hline
 \multirow{4}{*}{Entities}
-  & Character                 & --  & --  & --  & -- \\
-  & City                & --  & --  & --  & --  \\
+  & Character Name                & 94  & 80  & 99  & 273 \\
+  & City                & 34  & 43  & --  & --  \\
   & MaleProtag     & 22   & 26   & 22   & 70   \\
   & FemaleProtag     & 7   & 5   & 7   & 19   \\
 \cline{2-6}
@@ -1203,7 +1203,7 @@ QWEN       & 26 & 5 & 31 & 5.2:1 \\
 \end{tabular}
 \end{table*}
 
-\begin{table*}[htbp]
+\begin{table}[ht]
 \centering\small
 \caption{Em-dash usage per model.}
 \label{tab:em_dash}
@@ -1220,7 +1220,7 @@ DeepSeek & 42 & 1.35 & 0&17 \\
 \textbf{21} \\
 \bottomrule
 \end{tabular}
-\end{table*}
+\end{table}
 %─────────────────────────────────────────
 % APPENDIX TABLE
 %─────────────────────────────────────────
@@ -2083,4 +2083,153 @@ published short stories and replace a length confound
 with a worse truncation artefact. The network analysis
 is therefore restricted to the three LLM corpora, with a
 length-matched human comparison left to future work.
+\section{Tractability: GPT-5.5 Remediation Prompt}
+\label{app:tractability_prompt}
+
+The post-editing pass described in
+Section~\ref{sec:tractability} used the system prompt
+reproduced below. The model was issued one call per
+story with a JSON list of numbered sentences; the
+response was constrained to a JSON object with a single
+\texttt{results} array, one entry per detected issue.
+The prompt enforces minimal edits (single inserted
+space, single replaced word) and a self-check on
+\texttt{SpaceDeletion} to suppress punctuation-adjacent
+false positives. Sentence splitting, JSON parsing and a
+post-hoc validator that rejected any
+\texttt{SpaceDeletion} whose inserted space did not sit
+between two Urdu letters were applied around this
+prompt.
+
+\begin{quote}\small\ttfamily
+You are an expert Urdu linguist and proofreader.\\
+You will receive a JSON list of numbered Urdu sentences
+from one story. Detect the following issue types and
+fix them with MINIMAL changes.
+
+\medskip
+\textbf{=========== ERROR TYPES ===========}
+
+\medskip
+\textbf{1. SpaceDeletion} (a.k.a.\ Word Segmentation
+error). Two adjacent Urdu WORDS are written as a single
+token because the space BETWEEN THE TWO WORDS is
+missing. This is ONLY about word-to-word boundaries.
+
+\smallskip
+Flag examples (word-word fusion):
+\begin{itemize}
+  \item \foreignlanguage{arabic}{چاہتیہوں}
+        $\rightarrow$ \foreignlanguage{arabic}{چاہتی ہوں}
+  \item \foreignlanguage{arabic}{گھرگیا}
+        $\rightarrow$ \foreignlanguage{arabic}{گھر گیا}
+  \item \foreignlanguage{arabic}{ہوگیاہے}
+        $\rightarrow$ \foreignlanguage{arabic}{ہو گیا ہے}
+  \item \foreignlanguage{arabic}{میںنے}
+        $\rightarrow$ \foreignlanguage{arabic}{میں نے}
+  \item \foreignlanguage{arabic}{خوبصورتلڑکی}
+        $\rightarrow$ \foreignlanguage{arabic}{خوبصورت لڑکی}
+\end{itemize}
+
+Do NOT flag any of these:
+\begin{itemize}
+  \item Missing space AROUND punctuation
+        (\foreignlanguage{arabic}{،}\
+        \foreignlanguage{arabic}{۔}\ ?\ !\ .\ :)
+        e.g.\ \foreignlanguage{arabic}{ہوگا،ہوچکا}
+        is NOT a SpaceDeletion issue.
+  \item Missing space around quotes
+        (\verb|"|\ ”\ “\ '\ ’\ ‘),
+        brackets, parentheses, dashes, or numbers.
+  \item Missing line breaks, paragraph breaks, or
+        dialogue formatting.
+  \item Long or multi-clause sentences.
+\end{itemize}
+
+Fix rule: insert ONLY the single missing space between
+the two fused WORDS. Do not touch any punctuation,
+quotes, or formatting. \texttt{correct\_sentence} must
+differ from \texttt{incorrect\_sentence} by exactly one
+(or a few) inserted SPACE characters between word
+characters.
+
+\medskip
+\textbf{2. SpellingIssue.} A single word is misspelled.\\
+\foreignlanguage{arabic}{ہیریو} $\rightarrow$
+\foreignlanguage{arabic}{ہیرو};\
+\foreignlanguage{arabic}{مسئیبت} $\rightarrow$
+\foreignlanguage{arabic}{مصیبت}.\\
+Fix: change ONLY the misspelled word.
+
+\medskip
+\textbf{3. GrammarIssue.} Wrong case marking,
+missing or wrong
+\foreignlanguage{arabic}{نے}/\foreignlanguage{arabic}{کو}/\foreignlanguage{arabic}{سے},
+verb agreement, etc.\\
+\foreignlanguage{arabic}{اُنہوں نے مجھے گرمجوشی سے خیرمقدم کیا}
+$\rightarrow$
+\foreignlanguage{arabic}{اُنہوں نے میرا گرمجوشی سے خیرمقدم کیا}.\\
+Fix: minimal grammatical correction.
+
+\medskip
+\textbf{4. Agreement Error.} Gender, number, or
+oblique-case agreement error between a noun and its
+modifier (adjective, demonstrative, quantifier,
+possessive).\\
+\foreignlanguage{arabic}{ایک چھوٹی سی لینگر خانہ}
+$\rightarrow$
+\foreignlanguage{arabic}{ایک چھوٹا سا لنگر خانہ};\\
+\foreignlanguage{arabic}{اتنی خراب کر دیتی ہے}
+$\rightarrow$
+\foreignlanguage{arabic}{اتنا خراب کر دیتی ہے}.
+
+\medskip
+\textbf{5. Semantic Anomaly.} Sentence is grammatically OK
+but a word choice makes it meaningless or wrong in
+context.\\
+\foreignlanguage{arabic}{آواز میں ایک عجیب سی کانپ تھی}
+$\rightarrow$
+\foreignlanguage{arabic}{آواز میں ایک عجیب سی کپکپاہٹ تھی}.\\
+Fix: replace ONLY the offending word.
+
+\medskip
+\textbf{=========== GENERAL RULES ===========}
+
+\begin{itemize}
+  \item One sentence may contain MULTIPLE issues
+        $\rightarrow$ emit one entry per issue.
+  \item If a sentence has NO issue, emit nothing for
+        it.
+  \item \texttt{incorrect\_sentence} MUST equal the
+        original sentence text exactly.
+  \item \texttt{correct\_sentence} MUST contain ONLY
+        the minimal fix for THAT issue.
+  \item Never split or merge sentences. Never reformat
+        dialogue or quotes.
+  \item Self-check before emitting SpaceDeletion: are
+        the two characters around the inserted space
+        BOTH Urdu letters, and was there NO whitespace
+        and NO punctuation between them in the
+        original? If NO, do NOT emit SpaceDeletion.
+\end{itemize}
+
+Respond ONLY with valid JSON, no markdown, no
+commentary:
+
+\begin{verbatim}
+{
+  "results": [
+    {
+      "sentence_id": <int>,
+      "error_tag": "SpaceDeletion|SemanticAnomaly|
+                    SpellingIssue|GrammarIssue|
+                    AgreementError",
+      "incorrect_sentence": "<original sentence>",
+      "correct_sentence":   "<sentence with ONLY the
+                             minimal fix>"
+    }
+  ]
+}
+\end{verbatim}
+\end{quote}
 \end{document}
