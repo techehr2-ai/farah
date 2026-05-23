@@ -270,7 +270,7 @@ FemaleProtag.    & U & Main female character.
 Several models generated grammatically correct Urdu but failed to preserve culturally authentic Pakistani dialogues and naming conventions.
 
 
-\subsection{Linguistic and Semantic Quality Analysis}
+\subsection{Linguistic and Semantic Accuracy}
 
 Manual annotation of all 93 generated stories 
 identified 
@@ -503,7 +503,7 @@ correctly used, but the lexical choice renders the
 sentence semantically incoherent, a failure mode that
 fluent Urdu speakers would not produce.
 
-\textbf{Context mismatch.} Context-mismatch errors arise when a generated
+\textbf{Context mismatch.}ِ\label{sec:context_mismatch} Context-mismatch errors arise when a generated
 sentence is locally well-formed but conflicts with
 earlier narrative content, a real-world fact, or a
 culturally established script. The
@@ -613,8 +613,8 @@ English-anchored semantic representation.
 
 
 
-\paragraph{Western-Influenced Context Mismatch.}
-A small but qualitatively striking sub-set of
+\subsection{Cultural and Script Fidelity}
+ \label{sec:cultural}A small but qualitatively striking sub-set of
 context-mismatch errors involves the substitution
 of Pakistani objects, institutions, and practices
 with their nearest Western analogues, while the
@@ -735,7 +735,7 @@ neural text generation
 \citep{genderbiasllmgenerated2025,VANBLERCK2025100972}.
 
 
-\subsection{Source-Engagement Analysis}
+\subsection{Originality: Source Engagement and Memorisation}
 \subsubsection{Title Repetition and Three Modes of Source Engagement}
 \label{subsec:title_repetition}
 
@@ -929,7 +929,7 @@ Composite score        & \textbf{0.50} & 0.43 & 0.27 \\
 \end{tabular}
 \end{table}
 
-\subsection{Cross-Model Structural Analysis}
+\subsection{Narrative Structure: Character Networks}
 \label{sec:networks}
 
 During annotation it was observed that the generated
@@ -1030,12 +1030,79 @@ DS \& QWEN                  & \multicolumn{3}{c}{0.013 / 0.000} \\
 
 
 
-\section{LLM  Fix Issues }
+\section{Tractability: Targeted Remediation with GPT-5.5}
+\label{sec:tractability}
+
+To test which of the failures documented above can be
+corrected without retraining, a targeted post-editing
+experiment was conducted on a stratified subset of 15
+stories (5 per model, balanced across title categories).
+Each story was passed through GPT-5.5 
+with a JSON-response prompt instructing it to detect and
+minimally fix five error types: grammar errors,
+agreement, agreement errors, spelling errors, space
+deletion, and semantic anomaly. The prompt enforced
+single-token edits where possible (e.g.\ inserting one
+missing space, replacing one misspelled word) and
+forbade sentence-level rewrites or reformatting. The
+full system prompt is given in
+Appendix~\ref{app:tractability_prompt}.
+
+GPT-5.5 output was compared against the human annotations
+on the same 15 stories. Alignment with human-flagged
+errors reached approximately 90\% across the four
+linguistic categories: grammar, agreement, spelling and
+space deletion were detected and corrected at high
+precision, with single-character or single-word fixes
+that preserved the surrounding text. Semantic anomaly
+(syntactically well-formed but semantically empty
+sentences) was detected at lower but useful rates, with
+GPT-5.5 successfully repairing cases such as near-synonym
+confusion (\foreignlanguage{arabic}{بڑھاوا} for
+\foreignlanguage{arabic}{ترقی}) where the lexical
+substitution was local. A small number of kinship-term
+errors (e.g.\ \foreignlanguage{arabic}{خالہ} for
+\foreignlanguage{arabic}{پھوپھی}) were also caught,
+indicating partial sensitivity to Urdu's relational
+lexicon.
+
+The remediation boundary is sharp. Errors that GPT-5.5
+did \emph{not} catch are precisely the failure modes
+identified in
+Sections~\ref{sec:context_mismatch} and~\ref{sec:cultural}: 
+long-range gender breakdown across discourse, cultural
+and religious anachronisms (a Muslim character cremated,
+a full moon on Eid, a captain in a Pakistani village
+kitchen), Western-context substitutions (refreshment van, gas station) and Punjabi
+register switching in DeepSeek output. These errors
+require background knowledge of Pakistani cultural
+scripts, persistent discourse state, or commitment to a
+prompted language register, none of which a sentence-level
+proofreading pass can supply.
 
 
 \section{Conclusion}
-This study demonstrates that while modern LLMs can generate fluent Urdu narratives, significant challenges remain in cultural grounding and linguistic precision. 
 
+This study evaluates whether contemporary multilingual LLMs are
+genuinely competent in Urdu or only fluent on its
+surface. A corpus of LLM generated Urdu-Stories  annotated by
+native speakers, give a consistent answer. When a
+story's source text is well represented online, models
+reproduce it; when it is not, they fall back on
+unpacking the title itself. 
+The surface language is fluent but not native, with
+errors clustering on features English does not share:
+ergative case, gender agreement, retroflex consonants
+spelled through an English intermediary. Father's sister
+become Mother's sister, Muslim characters are cremated,
+gas stations appear in Punjabi villages. The social
+worlds are oddly warm, with the median story containing
+no negative relationship at all and male protagonists
+outnumbering female ones almost four to one. A modern
+model can proofread away most of the grammar and
+spelling errors, but it cannot fix the cremation or the
+gas station. The models can spell and form sentences,
+mostly, but they cannot yet write a Pakistani story.
 %─────────────────────────────────────────
 \section*{Limitations}
 \label{subsec:trr_limit}
@@ -1576,7 +1643,7 @@ contaminated word into two structural patterns:
 \end{itemize}
 
 Aggregate counts per script and per model are given in
-Table~\ref{tab:script_contamination_full}.
+Table~\ref{tab:script_contamination}.
 
 
 
@@ -1653,6 +1720,34 @@ bilingual compounds. The exception is
 where Cyrillic characters are substituted for similar Urdu
 phonemes within a single word, a pattern structurally
 analogous to the Devanagari substitutions above.
+\begin{table}[ht]
+
+\centering
+\caption{Script Contamination Summary by Model}
+\label{tab:script_contamination}
+\scalebox{0.7}{
+\begin{tabular}{lcccc}
+\hline
+\textbf{Metric} & 
+\textbf{GPT} & 
+\textbf{QWEN} & 
+\textbf{DeepSeek} & 
+\textbf{Total} \\
+\hline
+Affected stories        & 6  & 3  & 15 & 24 \\
+Total contaminated words& 11 & 14 & 61 & 86 \\
+\quad Pure intrusion    & 8  & 3  & 42 & 53 \\
+\quad Partial mixed     & 3  & 11 & 19 & 33 \\
+\hline
+\multicolumn{5}{l}{\textit{By Script}} \\
+\quad Latin (English)   & 7  & 13 & 47 & 67 \\
+\quad Devanagari (Hindi)& 3  & 1  & 9  & 13 \\
+\quad Chinese (CJK)     & 0  & 0  & 3  & 3  \\
+\quad Cyrillic          & 1  & 0  & 2  & 3  \\
+\hline
+\end{tabular}
+}
+\end{table}
 
 \section{Top Repetition Cases}
 \label{app:top_repetition}
